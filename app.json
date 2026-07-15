@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "ReceiptGenius",
+    "slug": "receiptgenius",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.heyitsmichell.receiptgenius",
+      "infoPlist": {
+        "NSCameraUsageDescription": "ReceiptGenius needs camera access to scan physical receipts for OCR tracking.",
+        "NSPhotoLibraryUsageDescription": "ReceiptGenius needs photo library access to upload existing receipt photos."
+      }
+    },
+    "android": {
+      "package": "com.heyitsmichell.receiptgenius",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow ReceiptGenius to access your camera to capture receipts."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow ReceiptGenius to access your photos to select receipt images."
+        }
+      ]
+    ]
+  }
+}
