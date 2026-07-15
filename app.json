@@ -19,9 +19,14 @@
     "android": {
       "package": "com.heyitsmichell.receiptgenius",
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -40,6 +45,18 @@
           "photosPermission": "Allow ReceiptGenius to access your photos to select receipt images."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "07bab913-5e1c-4d39-b077-e262fa0c2631"
+      }
+    },
+    "owner": "mixhell",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/07bab913-5e1c-4d39-b077-e262fa0c2631"
+    }
   }
 }
