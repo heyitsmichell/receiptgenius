@@ -1,8 +1,18 @@
 import { Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 import { CONFIG } from '../config/config';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const SHEETS_SCOPE =
   'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
+
+const GOOGLE_DISCOVERY = {
+  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+  tokenEndpoint: 'https://oauth2.googleapis.com/token',
+  revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+};
 
 /**
  * Dynamically loads Google Identity Services (GIS) script in the browser.
@@ -29,9 +39,44 @@ export function loadGoogleIdentityScript() {
 }
 
 /**
- * Prompts user to sign in with Google OAuth popup window and return access token.
+ * Prompts user to sign in with Google OAuth (Web popup OR Mobile system browser) and returns access token.
  */
 export async function requestGoogleAccessToken() {
+  if (Platform.OS !== 'web') {
+    // Native Mobile (Android / iOS) using expo-auth-session & system browser
+    try {
+      const redirectUri = AuthSession.makeRedirectUri({
+        scheme: 'receiptgenius',
+      });
+      console.log('Mobile OAuth Redirect URI:', redirectUri);
+
+      const authRequest = new AuthSession.AuthRequest({
+        clientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
+        scopes: [
+          'https://www.googleapis.com/auth/spreadsheets',
+          'https://www.googleapis.com/auth/userinfo.email',
+          'https://www.googleapis.com/auth/userinfo.profile',
+        ],
+        redirectUri,
+        responseType: AuthSession.ResponseType.Token,
+      });
+
+      const result = await authRequest.promptAsync(GOOGLE_DISCOVERY);
+      if (
+        result.type === 'success' &&
+        (result.authentication?.accessToken || result.params?.access_token)
+      ) {
+        return result.authentication?.accessToken || result.params.access_token;
+      } else {
+        throw new Error('Google Sign-In was cancelled or failed on mobile.');
+      }
+    } catch (err) {
+      console.error('Mobile Google OAuth Error:', err);
+      throw new Error(err?.message || 'Failed to authenticate on mobile.');
+    }
+  }
+
+  // Web Browser mode using Google Identity Services (GIS)
   await loadGoogleIdentityScript();
 
   return new Promise((resolve, reject) => {
@@ -57,6 +102,7 @@ export async function requestGoogleAccessToken() {
     }
   });
 }
+
 
 /**
  * Fetches Google Account profile information using access token.

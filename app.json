@@ -2,6 +2,7 @@
   "expo": {
     "name": "ReceiptGenius",
     "slug": "receiptgenius",
+    "scheme": "receiptgenius",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -44,7 +45,8 @@
         {
           "photosPermission": "Allow ReceiptGenius to access your photos to select receipt images."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
