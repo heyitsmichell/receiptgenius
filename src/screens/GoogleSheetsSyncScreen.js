@@ -10,11 +10,11 @@ import {
   Alert,
   TextInput,
   Modal,
-  SafeAreaView,
   Linking,
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { CONFIG } from '../config/config';
 import {
