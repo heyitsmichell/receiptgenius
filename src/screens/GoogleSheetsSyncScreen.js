@@ -238,11 +238,35 @@ export default function GoogleSheetsSyncScreen() {
     setInputSheetIdOrUrl(sheet.id);
   };
 
+  const handleUnlinkSheet = () => {
+    Alert.alert(
+      'Unlink Spreadsheet?',
+      'Do you want to disconnect this spreadsheet? Your Google Account will remain signed in so you can pick or create another sheet.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Unlink Sheet',
+          style: 'destructive',
+          onPress: async () => {
+            const nextSession = {
+              ...googleUser,
+              spreadsheetId: null,
+              spreadsheetTitle: '',
+              spreadsheetUrl: '',
+            };
+            setGoogleUser(nextSession);
+            await saveGoogleUserSession(nextSession);
+          },
+        },
+      ]
+    );
+  };
+
   const handleGoogleSignOut = () => {
-    Alert.alert('Disconnect Google Account?', 'Do you want to unlink your Google Account?', [
+    Alert.alert('Sign out of Google?', `Are you sure you want to log out of your Google Account (${googleUser.email})?`, [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Disconnect',
+        text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
           setGoogleUser({
@@ -484,38 +508,67 @@ export default function GoogleSheetsSyncScreen() {
 
           {googleUser.signedIn ? (
             <View style={styles.connectedBox}>
-              <View style={styles.connectedRow}>
-                <Text style={styles.connectedSheetIcon}>📗</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.connectedSheetTitle}>{googleUser.spreadsheetTitle}</Text>
-                  <Text style={styles.connectedSheetStatus}>
-                    Active • Live REST API v4 Syncing
+              {googleUser.spreadsheetId ? (
+                <>
+                  <View style={styles.connectedRow}>
+                    <Text style={styles.connectedSheetIcon}>📗</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.connectedSheetTitle}>{googleUser.spreadsheetTitle}</Text>
+                      <Text style={styles.connectedSheetStatus}>
+                        Active • Live REST API v4 Syncing
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.openSheetButton}
+                      onPress={() => Linking.openURL(googleUser.spreadsheetUrl)}
+                    >
+                      <Text style={styles.openSheetButtonText}>Open Sheet ↗</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.googleCardActions}>
+                    <TouchableOpacity
+                      style={styles.switchSheetButton}
+                      onPress={() => {
+                        setGoogleModalVisible(true);
+                        handleBrowseDriveSheets();
+                      }}
+                    >
+                      <Text style={styles.switchSheetButtonText}>Switch Sheet</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.disconnectButton}
+                      onPress={handleUnlinkSheet}
+                    >
+                      <Text style={styles.disconnectButtonText}>Unlink Sheet</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : (
+                <View style={{ paddingVertical: spacing.sm }}>
+                  <Text style={{ fontSize: 13, color: colors.onSurfaceVariant, marginBottom: spacing.md }}>
+                    No spreadsheet linked yet. Pick one from your Drive or create a new one to start syncing!
                   </Text>
+                  <TouchableOpacity
+                    style={[styles.switchSheetButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      setGoogleModalVisible(true);
+                      handleBrowseDriveSheets();
+                    }}
+                  >
+                    <Text style={[styles.switchSheetButtonText, { color: '#003824', textAlign: 'center' }]}>
+                      📂 Choose or Create Google Sheet
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={styles.openSheetButton}
-                  onPress={() => Linking.openURL(googleUser.spreadsheetUrl)}
-                >
-                  <Text style={styles.openSheetButtonText}>Open Sheet ↗</Text>
-                </TouchableOpacity>
-              </View>
+              )}
 
-              <View style={styles.googleCardActions}>
-                <TouchableOpacity
-                  style={styles.switchSheetButton}
-                  onPress={() => {
-                    setGoogleModalVisible(true);
-                    handleBrowseDriveSheets();
-                  }}
-                >
-                  <Text style={styles.switchSheetButtonText}>Create / Link Sheet</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.disconnectButton}
-                  onPress={handleGoogleSignOut}
-                >
-                  <Text style={styles.disconnectButtonText}>Disconnect</Text>
+              <View style={{ marginTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.surfaceHighest, paddingTop: spacing.sm, alignItems: 'center' }}>
+                <TouchableOpacity onPress={handleGoogleSignOut}>
+                  <Text style={{ fontSize: 12, color: colors.onSurfaceVariant, textDecorationLine: 'underline' }}>
+                    Sign out of Google Account ({googleUser.email})
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
