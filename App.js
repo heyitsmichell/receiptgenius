@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { colors } from './src/theme/theme';
 import { CONFIG } from './src/config/config';
@@ -185,26 +185,34 @@ export default function App() {
   // If running on web (`expo export -p web` for Vercel deployment) or no Vercel URL configured,
   // render the standard React Navigation interface without offline fallback banners.
   if (Platform.OS === 'web' || !vercelUrl.startsWith('http')) {
-    return <NativeAppContent isOfflineFallback={false} />;
+    return (
+      <SafeAreaProvider>
+        <NativeAppContent isOfflineFallback={false} />
+      </SafeAreaProvider>
+    );
   }
 
   // If in offline fallback mode (user opted to use local storage when WebView couldn't connect),
   // render native app with offline status bar.
   if (useOfflineFallback) {
     return (
-      <NativeAppContent
-        isOfflineFallback={true}
-        onRetryOnline={() => setUseOfflineFallback(false)}
-      />
+      <SafeAreaProvider>
+        <NativeAppContent
+          isOfflineFallback={true}
+          onRetryOnline={() => setUseOfflineFallback(false)}
+        />
+      </SafeAreaProvider>
     );
   }
 
   // Otherwise, render the hybrid WebView shell pointing to Vercel
   return (
-    <HybridWebShell
-      targetUrl={vercelUrl}
-      onFallbackToOffline={() => setUseOfflineFallback(true)}
-    />
+    <SafeAreaProvider>
+      <HybridWebShell
+        targetUrl={vercelUrl}
+        onFallbackToOffline={() => setUseOfflineFallback(true)}
+      />
+    </SafeAreaProvider>
   );
 }
 
