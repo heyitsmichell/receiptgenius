@@ -111,7 +111,7 @@ export async function scanReceiptImage(base64Image, apiKey) {
   if (!activeKey) {
     return {
       success: false,
-      error: 'Google AI Studio API Key is missing. Please verify EXPO_PUBLIC_GEMINI_API_KEY in your .env file and restart Metro.',
+      error: 'Google AI Studio API Key is not configured. For local development, set EXPO_PUBLIC_GEMINI_API_KEY in .env and restart Metro. For Vercel deployments, add EXPO_PUBLIC_GEMINI_API_KEY to your Vercel Project Environment Variables and redeploy.',
       requiresManualInput: true,
     };
   }
