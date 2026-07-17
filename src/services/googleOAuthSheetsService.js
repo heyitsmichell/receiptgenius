@@ -28,6 +28,17 @@ export function loadGoogleIdentityScript() {
       return;
     }
 
+    const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (existingScript) {
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+        resolve();
+      } else {
+        existingScript.addEventListener('load', () => resolve());
+        existingScript.addEventListener('error', () => reject(new Error('Failed to load Google Identity Services SDK.')));
+      }
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
@@ -36,6 +47,10 @@ export function loadGoogleIdentityScript() {
     script.onerror = () => reject(new Error('Failed to load Google Identity Services SDK.'));
     document.head.appendChild(script);
   });
+}
+
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
+  loadGoogleIdentityScript().catch(() => {});
 }
 
 /**
@@ -79,10 +94,18 @@ export async function requestGoogleAccessToken() {
   }
 
   // Web Browser mode using Google Identity Services (GIS)
-  await loadGoogleIdentityScript();
+  // Only await if not already loaded, to preserve synchronous click handler stack for popup blockers
+  if (typeof window === 'undefined' || !window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+    await loadGoogleIdentityScript();
+  }
 
   return new Promise((resolve, reject) => {
     try {
+      if (typeof window === 'undefined' || !window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+        reject(new Error('Google Identity Services SDK could not be initialized.'));
+        return;
+      }
+
       const client = window.google.accounts.oauth2.initTokenClient({
         client_id: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
         scope: SHEETS_SCOPE,
@@ -94,7 +117,16 @@ export async function requestGoogleAccessToken() {
           }
         },
         error_callback: (err) => {
-          reject(new Error(err && err.message ? err.message : 'Google OAuth error'));
+          const msg = err && err.message ? err.message : (err && err.type ? err.type : 'Google OAuth error');
+          if (msg.includes('popup_failed_to_open') || msg.includes('Failed to open popup') || msg.includes('blocked by')) {
+            reject(
+              new Error(
+                `Browser Popup Blocked!\n\nYour browser (or Brave Shields) blocked the Google sign-in window from opening.\n\nTo allow sign-in:\n1. Look at the right side of your address bar (or Brave Shields lion icon).\n2. Click "Always allow popups and redirects from receiptgenius-seven.vercel.app" (or turn off Shields for this site).\n3. Click the button again!`
+              )
+            );
+          } else {
+            reject(new Error(msg));
+          }
         },
       });
 
