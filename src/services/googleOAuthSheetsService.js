@@ -439,3 +439,90 @@ export async function deleteReceiptFromGoogleSheet(accessToken, spreadsheetId, r
 
   return { success: true, clearedRow: rowNum };
 }
+
+/**
+ * Fetches all receipt rows from Google Sheets (A1:J2000) and parses them into receipt objects.
+ * Returns an array of parsed receipt objects from the spreadsheet.
+ */
+export async function pullReceiptsFromGoogleSheet(accessToken, spreadsheetId) {
+  const getRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:J2000`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  if (!getRes.ok) {
+    const errObj = await getRes.json().catch(() => ({}));
+    throw new Error(errObj.error?.message || 'Failed to fetch rows from Google Sheets API.');
+  }
+
+  const data = await getRes.json();
+  const rows = data.values || [];
+
+  if (rows.length <= 1) {
+    return [];
+  }
+
+  const pulledReceipts = [];
+  // Skip row 0 (Header row)
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length === 0) continue;
+
+    const loggedAt = row[0] || '';
+    const receiptId = row[1] ? String(row[1]).trim() : `pulled-${Date.now()}-${i}`;
+    const dateStr = row[2] || (loggedAt ? loggedAt.split('T')[0] : new Date().toISOString().split('T')[0]);
+    const merchant = row[3] || 'Unknown Merchant';
+    const category = row[4] || 'General';
+    const totalAmount = parseFloat(row[5]) || 0;
+    const taxAmount = parseFloat(row[6]) || 0;
+    const notesText = row[7] || '';
+    const confidenceScore = parseFloat(row[8]) || 0.95;
+    const lineItemsStr = row[9] || '';
+
+    // Parse line items if present (format: "Item 1 (10.50); Item 2 (5.00)")
+    const lineItems = [];
+    if (lineItemsStr) {
+      const parts = lineItemsStr.split(';');
+      parts.forEach((p) => {
+        const trimmed = p.trim();
+        if (!trimmed) return;
+        const match = trimmed.match(/^(.*?)\s*\(([^)]+)\)$/);
+        if (match) {
+          lineItems.push({
+            description: match[1].trim(),
+            price: match[2].trim(),
+            totalPrice: parseFloat(match[2]) || 0,
+          });
+        } else {
+          lineItems.push({
+            description: trimmed,
+            price: '',
+            totalPrice: 0,
+          });
+        }
+      });
+    }
+
+    pulledReceipts.push({
+      id: receiptId,
+      date: dateStr,
+      merchant: merchant,
+      category: category,
+      totalAmount: totalAmount,
+      taxAmount: taxAmount,
+      currency: notesText.includes('Currency:')
+        ? notesText.split('Currency:')[1].trim().split(' ')[0]
+        : 'HKD',
+      conversionNote: notesText,
+      confidenceScore: confidenceScore,
+      lineItems: lineItems,
+      syncedToSheets: true,
+      syncStatus: 'synced',
+    });
+  }
+
+  return pulledReceipts;
+}
+

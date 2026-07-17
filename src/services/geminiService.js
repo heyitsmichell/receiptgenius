@@ -104,9 +104,9 @@ export const RECEIPT_RESPONSE_SCHEMA = {
 export async function scanReceiptImage(base64Image, apiKey) {
   const activeKey = apiKey || CONFIG.GEMINI_API_KEY;
   const configuredModel = CONFIG.GEMINI_MODEL || 'gemma-4-31b-it';
-  // Map legacy/HuggingFace model ID to Google AI Studio's active instruction-tuned Gemma vision endpoint
+  // Map legacy or smaller 12B model IDs to Google AI Studio's active 31B instruction-tuned Gemma vision endpoint
   const activeModel =
-    configuredModel === 'gemma-3-12b-it' ? 'gemma-4-31b-it' : configuredModel;
+    configuredModel.includes('12b') ? 'gemma-4-31b-it' : configuredModel;
 
   if (!activeKey) {
     return {

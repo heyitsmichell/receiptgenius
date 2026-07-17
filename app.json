@@ -46,7 +46,8 @@
           "photosPermission": "Allow ReceiptGenius to access your photos to select receipt images."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font"
     ],
     "extra": {
       "eas": {

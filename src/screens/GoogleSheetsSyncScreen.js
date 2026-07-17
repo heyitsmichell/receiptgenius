@@ -31,6 +31,7 @@ import {
   fetchGoogleUserProfile,
   createGoogleSpreadsheet,
   appendReceiptToGoogleSheet,
+  pullReceiptsFromGoogleSheet,
 } from '../services/googleOAuthSheetsService';
 
 export default function GoogleSheetsSyncScreen() {
@@ -273,6 +274,93 @@ export default function GoogleSheetsSyncScreen() {
     }
   };
 
+  const handleTwoWaySync = async () => {
+    if (!googleUser.signedIn || !googleUser.accessToken || !googleUser.spreadsheetId) {
+      Alert.alert(
+        'Google Account Needed',
+        'Please connect your Google Account above first to run a two-way sync with Google Sheets.'
+      );
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      // 1. PULL: Retrieve existing receipts from Google Sheets
+      const pulledFromSheet = await pullReceiptsFromGoogleSheet(
+        googleUser.accessToken,
+        googleUser.spreadsheetId
+      );
+
+      // 2. MERGE with local AsyncStorage receipts
+      const localReceipts = await getReceipts();
+      const existingIds = new Set(localReceipts.map((r) => r.id));
+      const existingMerchantTotals = new Set(
+        localReceipts.map((r) => `${r.merchant}_${Number(r.totalAmount || 0).toFixed(2)}`)
+      );
+
+      let importedCount = 0;
+      const mergedReceipts = [...localReceipts];
+
+      for (const pulled of pulledFromSheet) {
+        const key = `${pulled.merchant}_${Number(pulled.totalAmount || 0).toFixed(2)}`;
+        if (!existingIds.has(pulled.id) && !existingMerchantTotals.has(key)) {
+          mergedReceipts.push(pulled);
+          existingIds.add(pulled.id);
+          existingMerchantTotals.add(key);
+          importedCount++;
+        }
+      }
+
+      // 3. PUSH: Upload any local receipts that haven't been synced to Google Sheets yet
+      let exportedCount = 0;
+      for (let i = 0; i < mergedReceipts.length; i++) {
+        if (!mergedReceipts[i].syncedToSheets || mergedReceipts[i].syncStatus !== 'synced') {
+          try {
+            await appendReceiptToGoogleSheet(
+              googleUser.accessToken,
+              googleUser.spreadsheetId,
+              mergedReceipts[i]
+            );
+            mergedReceipts[i].syncedToSheets = true;
+            mergedReceipts[i].syncStatus = 'synced';
+            exportedCount++;
+          } catch (err) {
+            console.warn('Failed pushing offline item during two-way sync:', mergedReceipts[i].id);
+          }
+        }
+      }
+
+      await saveReceipts(mergedReceipts);
+
+      const nowStr = new Date().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      setLastSynced(`Today at ${nowStr}`);
+
+      const sheetName = googleUser.spreadsheetTitle || 'Google Sheet';
+      const newEntry = {
+        id: String(Date.now()),
+        type: 'Two-Way Sync (Pull & Push)',
+        details: `Imported ${importedCount} receipt(s) from sheet & exported ${exportedCount} offline receipt(s) to ${sheetName}`,
+        time: `Today\n${nowStr}`,
+        status: 'success',
+      };
+      const nextHistory = [newEntry, ...exportHistory];
+      setExportHistory(nextHistory);
+      await saveExportHistory(nextHistory);
+
+      Alert.alert(
+        'Two-Way Sync Complete 🔄',
+        `Successfully retrieved ${importedCount} new receipt(s) from your Google Sheet and pushed ${exportedCount} local offline receipt(s) to "${sheetName}"!`
+      );
+    } catch (err) {
+      Alert.alert('Two-Way Sync Failed', err.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleSaveWebhook = () => {
     setWebhookUrl(tempUrl);
     CONFIG.GOOGLE_SHEETS_WEBHOOK_URL = tempUrl;
@@ -388,15 +476,27 @@ export default function GoogleSheetsSyncScreen() {
           <View style={styles.cardFooter}>
             <Text style={styles.lastSyncedText}>🕒 Last synced: {lastSynced}</Text>
 
-            <TouchableOpacity
-              style={styles.runExportButton}
-              onPress={handleRunManualExport}
-              disabled={syncing}
-            >
-              <Text style={styles.runExportButtonText}>
-                {syncing ? 'Exporting...' : '▶ Run Manual Export'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.syncButtonsRow}>
+              <TouchableOpacity
+                style={styles.twoWaySyncButton}
+                onPress={handleTwoWaySync}
+                disabled={syncing}
+              >
+                <Text style={styles.twoWaySyncButtonText}>
+                  {syncing ? 'Syncing...' : '🔄 Two-Way Sync (Pull & Push)'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.runExportButton}
+                onPress={handleRunManualExport}
+                disabled={syncing}
+              >
+                <Text style={styles.runExportButtonText}>
+                  {syncing ? 'Exporting...' : '▶ Push Offline Only'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -759,26 +859,49 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: spacing.md,
   },
   lastSyncedText: {
     fontSize: 13,
     color: colors.onSurfaceVariant,
   },
-  runExportButton: {
+  syncButtonsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    width: '100%',
+  },
+  twoWaySyncButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
+    flex: 1,
+    minWidth: 190,
+    alignItems: 'center',
   },
-  runExportButtonText: {
+  twoWaySyncButtonText: {
     color: '#003824',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
+  },
+  runExportButton: {
+    backgroundColor: colors.surfaceHighest,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    flex: 1,
+    minWidth: 150,
+    alignItems: 'center',
+  },
+  runExportButtonText: {
+    color: colors.onSurface,
+    fontWeight: '600',
+    fontSize: 13,
   },
   section: {
     marginBottom: spacing.lg,

@@ -7,88 +7,59 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const RECEIPTS_KEY = '@receiptgenius_receipts';
 const SETTINGS_KEY = '@receiptgenius_settings';
 
-const INITIAL_SAMPLE_RECEIPTS = [
-  {
-    id: 'REC-1001',
-    merchant: 'Whole Foods Market',
-    date: '2026-07-13',
-    category: 'Groceries',
-    subtotal: 78.40,
-    tax: 6.85,
-    totalAmount: 85.25,
-    currency: 'USD',
-    paymentMethod: 'Visa **4092',
-    confidenceScore: 0.98,
-    syncStatus: 'synced',
-    lineItems: [
-      { description: 'Organic Spinach', price: 4.99 },
-      { description: 'Almond Milk 6-Pack', price: 14.50 },
-      { description: 'Wild Salmon Fillet', price: 24.99 }
-    ]
-  },
-  {
-    id: 'REC-1002',
-    merchant: 'Blue Bottle Coffee',
-    date: '2026-07-12',
-    category: 'Food & Dining',
-    subtotal: 13.50,
-    tax: 1.25,
-    totalAmount: 14.75,
-    currency: 'USD',
-    paymentMethod: 'Apple Pay',
-    confidenceScore: 0.99,
-    syncStatus: 'synced',
-    lineItems: [
-      { description: 'Single Origin Oat Latte', price: 6.75 },
-      { description: 'Almond Croissant', price: 6.75 }
-    ]
-  },
-  {
-    id: 'REC-1003',
-    merchant: 'Uber Technologies',
-    date: '2026-07-11',
-    category: 'Transportation',
-    subtotal: 28.00,
-    tax: 2.50,
-    totalAmount: 30.50,
-    currency: 'USD',
-    paymentMethod: 'Amex **1009',
-    confidenceScore: 0.95,
-    syncStatus: 'synced',
-    lineItems: [
-      { description: 'Ride to Airport Terminal 2', price: 28.00 }
-    ]
-  },
-  {
-    id: 'REC-1004',
-    merchant: 'Apple Store Downtown',
-    date: '2026-07-10',
-    category: 'Shopping',
-    subtotal: 129.00,
-    tax: 11.29,
-    totalAmount: 140.29,
-    currency: 'USD',
-    paymentMethod: 'Visa **4092',
-    confidenceScore: 0.97,
-    syncStatus: 'synced',
-    lineItems: [
-      { description: 'USB-C Braided Cable 2M', price: 29.00 },
-      { description: 'AirPods Leather Case', price: 100.00 }
-    ]
-  }
-];
+const INITIAL_SAMPLE_RECEIPTS = [];
+
+const PRESET_RECEIPT_IDS = ['REC-1001', 'REC-1002', 'REC-1003', 'REC-1004'];
 
 export async function getReceipts() {
   try {
     const data = await AsyncStorage.getItem(RECEIPTS_KEY);
     if (!data) {
-      await AsyncStorage.setItem(RECEIPTS_KEY, JSON.stringify(INITIAL_SAMPLE_RECEIPTS));
       return INITIAL_SAMPLE_RECEIPTS;
     }
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed)) {
+      const filtered = parsed.filter((r) => !PRESET_RECEIPT_IDS.includes(r.id));
+      if (filtered.length !== parsed.length) {
+        await AsyncStorage.setItem(RECEIPTS_KEY, JSON.stringify(filtered));
+      }
+      return filtered;
+    }
+    return INITIAL_SAMPLE_RECEIPTS;
   } catch (error) {
     console.warn('Error fetching receipts:', error);
     return INITIAL_SAMPLE_RECEIPTS;
+  }
+}
+
+export async function clearPresetData() {
+  try {
+    const existingReceipts = await getReceipts();
+    const updatedReceipts = existingReceipts.filter((r) => !PRESET_RECEIPT_IDS.includes(r.id));
+    await AsyncStorage.setItem(RECEIPTS_KEY, JSON.stringify(updatedReceipts));
+
+    const existingHistory = await getExportHistory();
+    const updatedHistory = existingHistory.filter((item) => {
+      if (item.id === '1' && item.details === '12 receipts exported to ReceiptGenius Expenses 2026') return false;
+      if (item.id === '2' && item.details === '5 receipts exported to ReceiptGenius Expenses 2026') return false;
+      return true;
+    });
+    await AsyncStorage.setItem(EXPORT_HISTORY_KEY, JSON.stringify(updatedHistory));
+    return true;
+  } catch (error) {
+    console.warn('Error clearing preset data:', error);
+    return false;
+  }
+}
+
+export async function clearAllData() {
+  try {
+    await AsyncStorage.removeItem(RECEIPTS_KEY);
+    await AsyncStorage.removeItem(EXPORT_HISTORY_KEY);
+    return true;
+  } catch (error) {
+    console.warn('Error clearing all data:', error);
+    return false;
   }
 }
 
@@ -164,31 +135,27 @@ export async function saveSettings(settings) {
 
 const EXPORT_HISTORY_KEY = '@receiptgenius_export_history';
 
-const INITIAL_EXPORT_HISTORY = [
-  {
-    id: '1',
-    type: 'Auto-Sync',
-    details: '12 receipts exported to ReceiptGenius Expenses 2026',
-    time: 'Today\n10:42 AM',
-    status: 'success',
-  },
-  {
-    id: '2',
-    type: 'Manual Export',
-    details: '5 receipts exported to ReceiptGenius Expenses 2026',
-    time: 'Yesterday\n04:15 PM',
-    status: 'success',
-  },
-];
+const INITIAL_EXPORT_HISTORY = [];
 
 export async function getExportHistory() {
   try {
     const data = await AsyncStorage.getItem(EXPORT_HISTORY_KEY);
     if (!data) {
-      await AsyncStorage.setItem(EXPORT_HISTORY_KEY, JSON.stringify(INITIAL_EXPORT_HISTORY));
       return INITIAL_EXPORT_HISTORY;
     }
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed)) {
+      const filtered = parsed.filter((item) => {
+        if (item.id === '1' && item.details === '12 receipts exported to ReceiptGenius Expenses 2026') return false;
+        if (item.id === '2' && item.details === '5 receipts exported to ReceiptGenius Expenses 2026') return false;
+        return true;
+      });
+      if (filtered.length !== parsed.length) {
+        await AsyncStorage.setItem(EXPORT_HISTORY_KEY, JSON.stringify(filtered));
+      }
+      return filtered;
+    }
+    return INITIAL_EXPORT_HISTORY;
   } catch (error) {
     return INITIAL_EXPORT_HISTORY;
   }
