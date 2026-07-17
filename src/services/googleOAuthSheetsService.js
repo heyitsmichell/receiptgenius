@@ -125,15 +125,23 @@ export async function fetchGoogleUserProfile(accessToken) {
  * Fetches existing Google Spreadsheets created or accessible by the user on Google Drive.
  */
 export async function fetchUserSpreadsheets(accessToken) {
+  const query = encodeURIComponent("mimeType='application/vnd.google-apps.spreadsheet' and trashed=false");
   const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.spreadsheet' and trashed=false&orderBy=modifiedTime desc&pageSize=15&fields=files(id,name,webViewLink)`,
+    `https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=modifiedTime desc&pageSize=15&fields=files(id,name,webViewLink)`,
     {
       headers: { Authorization: `Bearer ${accessToken}` },
     }
   );
 
   if (!res.ok) {
-    throw new Error('Failed to fetch spreadsheets from Google Drive API.');
+    const errorObj = await res.json().catch(() => ({}));
+    const message = errorObj.error?.message || '';
+    if (message.includes('has not been used in project') || message.includes('is disabled') || res.status === 403) {
+      throw new Error(
+        `Google Drive API is Not Enabled (403)\n\nGoogle requires enabling the Drive API in your Cloud Console to browse your Drive:\n\n1. Visit: https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=1090639889222\n2. Click the blue "ENABLE" button.\n3. Wait 30 seconds and click Browse again!\n\n💡 Or simply copy and paste your Spreadsheet URL/ID into the input box directly!`
+      );
+    }
+    throw new Error(message || 'Failed to fetch spreadsheets from Google Drive API.');
   }
 
   const data = await res.json();
