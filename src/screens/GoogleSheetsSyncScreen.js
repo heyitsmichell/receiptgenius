@@ -32,6 +32,8 @@ import {
   createGoogleSpreadsheet,
   appendReceiptToGoogleSheet,
   pullReceiptsFromGoogleSheet,
+  getSpreadsheetDetails,
+  fetchUserSpreadsheets,
 } from '../services/googleOAuthSheetsService';
 
 export default function GoogleSheetsSyncScreen() {
@@ -51,7 +53,11 @@ export default function GoogleSheetsSyncScreen() {
     spreadsheetUrl: 'https://docs.google.com/spreadsheets',
   });
   const [googleModalVisible, setGoogleModalVisible] = useState(false);
+  const [googleModalMode, setGoogleModalMode] = useState('link'); // 'link' or 'create'
   const [inputSheetTitle, setInputSheetTitle] = useState('ReceiptGenius Expenses 2026');
+  const [inputSheetIdOrUrl, setInputSheetIdOrUrl] = useState('');
+  const [driveSpreadsheets, setDriveSpreadsheets] = useState([]);
+  const [loadingDriveSheets, setLoadingDriveSheets] = useState(false);
 
   // Legacy Webhook state fallback
   const [webhookUrl, setWebhookUrl] = useState(CONFIG.GOOGLE_SHEETS_WEBHOOK_URL || '');
@@ -90,11 +96,19 @@ export default function GoogleSheetsSyncScreen() {
       // 2. Retrieve real Google account profile
       const profile = await fetchGoogleUserProfile(token);
 
-      // 3. Create a real spreadsheet on user's Google Drive via Sheets REST API v4
-      const sheetInfo = await createGoogleSpreadsheet(
-        token,
-        inputSheetTitle.trim() || 'ReceiptGenius Live Ledger'
-      );
+      // 3. Either LINK existing or CREATE new spreadsheet based on mode
+      let sheetInfo;
+      if (googleModalMode === 'link') {
+        if (!inputSheetIdOrUrl.trim()) {
+          throw new Error('Please enter or select a Google Sheet URL / ID.');
+        }
+        sheetInfo = await getSpreadsheetDetails(token, inputSheetIdOrUrl.trim());
+      } else {
+        sheetInfo = await createGoogleSpreadsheet(
+          token,
+          inputSheetTitle.trim() || 'ReceiptGenius Live Ledger'
+        );
+      }
 
       const newSession = {
         signedIn: true,
@@ -146,21 +160,58 @@ export default function GoogleSheetsSyncScreen() {
       Alert.alert(
         'Google Account Connected! 🎉',
         uploadedCount > 0
-          ? `Successfully signed in as ${profile.email}, linked sheet "${sheetInfo.title}", and automatically uploaded ${uploadedCount} existing receipt(s)!`
-          : `Successfully signed in as ${profile.email} and linked Google Sheet "${sheetInfo.title}"!`
+          ? `Successfully linked sheet "${sheetInfo.title}" (${profile.email}) and automatically uploaded ${uploadedCount} existing receipt(s)!`
+          : `Successfully linked sheet "${sheetInfo.title}" (${profile.email})!`
       );
     } catch (err) {
       const currentOrigin =
         typeof window !== 'undefined' && window.location
           ? window.location.origin
           : 'http://localhost:8081';
-      Alert.alert(
-        'Google OAuth: No Registered Origin (401)',
-        `Google blocked the request because your current browser origin is not registered.\n\nYour exact browser origin is:\n${currentOrigin}\n\nTo fix this:\n1. Open Google Cloud Console -> Credentials -> OAuth Client ID ending in ...ns70t\n2. Under "Authorized JavaScript origins", click + ADD URI and paste:\n${currentOrigin}\n3. Click Save and wait 60 seconds before retrying.`
-      );
+      if (err.message && err.message.includes('No Registered Origin')) {
+        Alert.alert(
+          'Google OAuth: No Registered Origin (401)',
+          `Google blocked the request because your current browser origin is not registered.\n\nYour exact browser origin is:\n${currentOrigin}\n\nTo fix this:\n1. Open Google Cloud Console -> Credentials -> OAuth Client ID ending in ...ns70t\n2. Under "Authorized JavaScript origins", click + ADD URI and paste:\n${currentOrigin}\n3. Click Save and wait 60 seconds before retrying.`
+        );
+      } else {
+        Alert.alert('Connection Failed', err.message);
+      }
     } finally {
       setOauthLoading(false);
     }
+  };
+
+  const handleBrowseDriveSheets = async () => {
+    setLoadingDriveSheets(true);
+    try {
+      let token = googleUser.accessToken;
+      if (!token || !googleUser.signedIn) {
+        token = await requestGoogleAccessToken();
+        const profile = await fetchGoogleUserProfile(token);
+        const nextSession = {
+          ...googleUser,
+          signedIn: true,
+          accessToken: token,
+          email: profile.email || 'Google Account',
+          name: profile.name || profile.email || 'User',
+        };
+        setGoogleUser(nextSession);
+        await saveGoogleUserSession(nextSession);
+      }
+      const sheets = await fetchUserSpreadsheets(token);
+      setDriveSpreadsheets(sheets);
+      if (sheets.length === 0) {
+        Alert.alert('No Spreadsheets Found', 'No existing spreadsheets were found on your Google Drive.');
+      }
+    } catch (err) {
+      Alert.alert('Browse Failed', err.message);
+    } finally {
+      setLoadingDriveSheets(false);
+    }
+  };
+
+  const handleSelectDriveSheet = (sheet) => {
+    setInputSheetIdOrUrl(sheet.id);
   };
 
   const handleGoogleSignOut = () => {
@@ -570,25 +621,123 @@ export default function GoogleSheetsSyncScreen() {
         {/* GOOGLE SIGN-IN & SPREADSHEET SETUP MODAL */}
         <Modal visible={googleModalVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
-            <View style={styles.modalBox}>
+            <View style={[styles.modalBox, { maxHeight: '85%' }]}>
               <View style={styles.googleModalTop}>
                 <View style={styles.googleLogoCircleLarge}>
                   <Text style={styles.googleLogoGLarge}>G</Text>
                 </View>
                 <Text style={styles.modalTitle}>Connect Google Account</Text>
                 <Text style={styles.modalSubtitle}>
-                  Using OAuth Client ID ending in ...ns70t. Enter the name for the spreadsheet you want created directly on your Google Drive.
+                  Choose whether to link an existing spreadsheet from your Google Drive or create a brand new one.
                 </Text>
               </View>
 
-              <Text style={styles.inputLabel}>New Spreadsheet Title</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="ReceiptGenius Expenses 2026"
-                placeholderTextColor={colors.onSurfaceVariant}
-                value={inputSheetTitle}
-                onChangeText={setInputSheetTitle}
-              />
+              {/* Mode Selector Tabs */}
+              <View style={styles.modalTabsRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.modalTab,
+                    googleModalMode === 'link' && styles.modalTabActive,
+                  ]}
+                  onPress={() => setGoogleModalMode('link')}
+                >
+                  <Text
+                    style={[
+                      styles.modalTabText,
+                      googleModalMode === 'link' && styles.modalTabTextActive,
+                    ]}
+                  >
+                    🔗 Link Existing Sheet
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.modalTab,
+                    googleModalMode === 'create' && styles.modalTabActive,
+                  ]}
+                  onPress={() => setGoogleModalMode('create')}
+                >
+                  <Text
+                    style={[
+                      styles.modalTabText,
+                      googleModalMode === 'create' && styles.modalTabTextActive,
+                    ]}
+                  >
+                    ✨ Create New Sheet
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
+                {googleModalMode === 'link' ? (
+                  <View>
+                    <Text style={styles.inputLabel}>Paste Spreadsheet URL or ID</Text>
+                    <TextInput
+                      style={styles.modalInput}
+                      placeholder="https://docs.google.com/spreadsheets/d/1abc.../edit"
+                      placeholderTextColor={colors.onSurfaceVariant}
+                      value={inputSheetIdOrUrl}
+                      onChangeText={setInputSheetIdOrUrl}
+                      autoCapitalize="none"
+                    />
+
+                    <TouchableOpacity
+                      style={styles.browseDriveButton}
+                      onPress={handleBrowseDriveSheets}
+                      disabled={loadingDriveSheets}
+                    >
+                      {loadingDriveSheets ? (
+                        <ActivityIndicator color={colors.primary} size="small" />
+                      ) : (
+                        <Text style={styles.browseDriveButtonText}>
+                          📂 Browse My Google Drive Sheets
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+
+                    {driveSpreadsheets.length > 0 && (
+                      <View style={styles.driveSheetsList}>
+                        <Text style={styles.driveSheetsHeader}>Select a recent sheet:</Text>
+                        {driveSpreadsheets.map((sheet) => (
+                          <TouchableOpacity
+                            key={sheet.id}
+                            style={[
+                              styles.driveSheetItem,
+                              inputSheetIdOrUrl === sheet.id && styles.driveSheetItemActive,
+                            ]}
+                            onPress={() => handleSelectDriveSheet(sheet)}
+                          >
+                            <Text style={styles.driveSheetIcon}>📗</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.driveSheetName} numberOfLines={1}>
+                                {sheet.name}
+                              </Text>
+                              <Text style={styles.driveSheetId} numberOfLines={1}>
+                                ID: {sheet.id}
+                              </Text>
+                            </View>
+                            {inputSheetIdOrUrl === sheet.id && (
+                              <Text style={styles.driveSheetCheck}>✓</Text>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <View>
+                    <Text style={styles.inputLabel}>New Spreadsheet Title</Text>
+                    <TextInput
+                      style={styles.modalInput}
+                      placeholder="ReceiptGenius Expenses 2026"
+                      placeholderTextColor={colors.onSurfaceVariant}
+                      value={inputSheetTitle}
+                      onChangeText={setInputSheetTitle}
+                    />
+                  </View>
+                )}
+              </ScrollView>
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity
@@ -607,7 +756,9 @@ export default function GoogleSheetsSyncScreen() {
                   {oauthLoading ? (
                     <ActivityIndicator color="#003824" />
                   ) : (
-                    <Text style={styles.googleModalAuthText}>Authorize with Google</Text>
+                    <Text style={styles.googleModalAuthText}>
+                      {googleModalMode === 'link' ? 'Link Spreadsheet' : 'Create & Link Sheet'}
+                    </Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1094,6 +1245,90 @@ const styles = StyleSheet.create({
     borderColor: colors.surfaceHighest,
     fontSize: 14,
     marginBottom: spacing.md,
+  },
+  modalTabsRow: {
+    flexDirection: 'row',
+    marginBottom: spacing.md,
+    backgroundColor: colors.surfaceLow,
+    borderRadius: borderRadius.md,
+    padding: 4,
+  },
+  modalTab: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: borderRadius.sm,
+  },
+  modalTabActive: {
+    backgroundColor: colors.surfaceHighest,
+  },
+  modalTabText: {
+    fontSize: 13,
+    color: colors.onSurfaceVariant,
+    fontWeight: '600',
+  },
+  modalTabTextActive: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  browseDriveButton: {
+    backgroundColor: colors.surfaceHighest,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    paddingVertical: 10,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  browseDriveButtonText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  driveSheetsList: {
+    backgroundColor: colors.surfaceLow,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  driveSheetsHeader: {
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    marginBottom: spacing.sm,
+    fontWeight: '600',
+  },
+  driveSheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: borderRadius.sm,
+    marginBottom: 4,
+  },
+  driveSheetItemActive: {
+    backgroundColor: colors.surfaceHighest,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  driveSheetIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  driveSheetName: {
+    fontSize: 13,
+    color: colors.onSurface,
+    fontWeight: '600',
+  },
+  driveSheetId: {
+    fontSize: 11,
+    color: colors.onSurfaceVariant,
+  },
+  driveSheetCheck: {
+    color: colors.primary,
+    fontWeight: '800',
+    fontSize: 16,
+    marginLeft: 8,
   },
   modalButtons: {
     flexDirection: 'row',

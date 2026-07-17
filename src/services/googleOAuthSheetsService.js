@@ -6,7 +6,7 @@ import { CONFIG } from '../config/config';
 WebBrowser.maybeCompleteAuthSession();
 
 const SHEETS_SCOPE =
-  'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
+  'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
 
 const GOOGLE_DISCOVERY = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -54,6 +54,8 @@ export async function requestGoogleAccessToken() {
         clientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
         scopes: [
           'https://www.googleapis.com/auth/spreadsheets',
+          'https://www.googleapis.com/auth/drive.readonly',
+          'https://www.googleapis.com/auth/drive.file',
           'https://www.googleapis.com/auth/userinfo.email',
           'https://www.googleapis.com/auth/userinfo.profile',
         ],
@@ -117,6 +119,59 @@ export async function fetchGoogleUserProfile(accessToken) {
     throw new Error('Failed to retrieve user profile from Google OAuth API.');
   }
   return await res.json();
+}
+
+/**
+ * Fetches existing Google Spreadsheets created or accessible by the user on Google Drive.
+ */
+export async function fetchUserSpreadsheets(accessToken) {
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.spreadsheet' and trashed=false&orderBy=modifiedTime desc&pageSize=15&fields=files(id,name,webViewLink)`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch spreadsheets from Google Drive API.');
+  }
+
+  const data = await res.json();
+  return data.files || [];
+}
+
+/**
+ * Verifies access to an existing Google Spreadsheet and retrieves its metadata (title, URL, ID).
+ */
+export async function getSpreadsheetDetails(accessToken, spreadsheetIdOrUrl) {
+  let cleanId = (spreadsheetIdOrUrl || '').trim();
+  if (cleanId.includes('/d/')) {
+    const parts = cleanId.split('/d/')[1];
+    cleanId = parts.split('/')[0];
+  }
+
+  if (!cleanId) {
+    throw new Error('Please enter a valid Google Spreadsheet URL or ID.');
+  }
+
+  const res = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${cleanId}?fields=spreadsheetId,properties(title),spreadsheetUrl`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  if (!res.ok) {
+    const errObj = await res.json().catch(() => ({}));
+    throw new Error(errObj.error?.message || 'Could not access existing Google Sheet. Check permissions or ID.');
+  }
+
+  const data = await res.json();
+  return {
+    spreadsheetId: data.spreadsheetId,
+    title: data.properties?.title || 'Linked Spreadsheet',
+    spreadsheetUrl: data.spreadsheetUrl || `https://docs.google.com/spreadsheets/d/${data.spreadsheetId}/edit`,
+  };
 }
 
 /**
