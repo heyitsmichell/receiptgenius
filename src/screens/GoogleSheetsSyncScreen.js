@@ -87,16 +87,61 @@ export default function GoogleSheetsSyncScreen() {
     }, [])
   );
 
-  const handleRealGoogleSignIn = async () => {
+  const handleGoogleLoginOnly = () => {
+    // 1. Invoke requestGoogleAccessToken synchronously without prior await or state delays
+    requestGoogleAccessToken()
+      .then(async (token) => {
+        setOauthLoading(true);
+        try {
+          const profile = await fetchGoogleUserProfile(token);
+          const nextSession = {
+            ...googleUser,
+            signedIn: true,
+            email: profile.email || 'Google Account',
+            name: profile.name || profile.email || 'User',
+            accessToken: token,
+          };
+          setGoogleUser(nextSession);
+          await saveGoogleUserSession(nextSession);
+
+          // Open spreadsheet choice modal right away if they don't have a sheet linked
+          if (!nextSession.spreadsheetId) {
+            setGoogleModalVisible(true);
+            handleBrowseDriveSheets(token);
+          } else {
+            Alert.alert('Google Account Connected! 🎉', `Signed in as ${profile.email}`);
+          }
+        } catch (err) {
+          Alert.alert('Profile Error', err.message);
+        } finally {
+          setOauthLoading(false);
+        }
+      })
+      .catch((err) => {
+        const currentOrigin =
+          typeof window !== 'undefined' && window.location
+            ? window.location.origin
+            : 'http://localhost:8081';
+        if (err.message && err.message.includes('No Registered Origin')) {
+          Alert.alert(
+            'Google OAuth: No Registered Origin (401)',
+            `Google blocked the request because your current browser origin is not registered.\n\nYour exact browser origin is:\n${currentOrigin}\n\nTo fix this:\n1. Open Google Cloud Console -> Credentials -> OAuth Client ID ending in ...ns70t\n2. Under "Authorized JavaScript origins", click + ADD URI and paste:\n${currentOrigin}\n3. Click Save and wait 60 seconds before retrying.`
+          );
+        } else {
+          Alert.alert('Sign-In Failed', err.message);
+        }
+      });
+  };
+
+  const handleLinkOrCreateSheet = async () => {
+    let token = googleUser.accessToken;
+    if (!token || !googleUser.signedIn) {
+      Alert.alert('Not Signed In', 'Please sign in with Google first!');
+      return;
+    }
+
     setOauthLoading(true);
     try {
-      // 1. Request real OAuth Access Token using Google Identity Services
-      const token = await requestGoogleAccessToken();
-
-      // 2. Retrieve real Google account profile
-      const profile = await fetchGoogleUserProfile(token);
-
-      // 3. Either LINK existing or CREATE new spreadsheet based on mode
       let sheetInfo;
       if (googleModalMode === 'link') {
         if (!inputSheetIdOrUrl.trim()) {
@@ -110,19 +155,18 @@ export default function GoogleSheetsSyncScreen() {
         );
       }
 
-      const newSession = {
+      const nextSession = {
+        ...googleUser,
         signedIn: true,
-        email: profile.email || 'Google Account',
-        name: profile.name || profile.email || 'User',
         accessToken: token,
         spreadsheetId: sheetInfo.spreadsheetId,
         spreadsheetTitle: sheetInfo.title,
         spreadsheetUrl: sheetInfo.spreadsheetUrl,
       };
-      setGoogleUser(newSession);
-      await saveGoogleUserSession(newSession);
+      setGoogleUser(nextSession);
+      await saveGoogleUserSession(nextSession);
 
-      // 4. Check for any existing records that haven't been uploaded yet
+      // Check for any existing records that haven't been uploaded yet
       const allReceipts = await getReceipts();
       const updatedReceipts = [...allReceipts];
       let uploadedCount = 0;
@@ -158,47 +202,27 @@ export default function GoogleSheetsSyncScreen() {
 
       setGoogleModalVisible(false);
       Alert.alert(
-        'Google Account Connected! 🎉',
+        'Spreadsheet Connected! 🎉',
         uploadedCount > 0
-          ? `Successfully linked sheet "${sheetInfo.title}" (${profile.email}) and automatically uploaded ${uploadedCount} existing receipt(s)!`
-          : `Successfully linked sheet "${sheetInfo.title}" (${profile.email})!`
+          ? `Linked sheet "${sheetInfo.title}" and automatically uploaded ${uploadedCount} existing receipt(s)!`
+          : `Linked sheet "${sheetInfo.title}"!`
       );
     } catch (err) {
-      const currentOrigin =
-        typeof window !== 'undefined' && window.location
-          ? window.location.origin
-          : 'http://localhost:8081';
-      if (err.message && err.message.includes('No Registered Origin')) {
-        Alert.alert(
-          'Google OAuth: No Registered Origin (401)',
-          `Google blocked the request because your current browser origin is not registered.\n\nYour exact browser origin is:\n${currentOrigin}\n\nTo fix this:\n1. Open Google Cloud Console -> Credentials -> OAuth Client ID ending in ...ns70t\n2. Under "Authorized JavaScript origins", click + ADD URI and paste:\n${currentOrigin}\n3. Click Save and wait 60 seconds before retrying.`
-        );
-      } else {
-        Alert.alert('Connection Failed', err.message);
-      }
+      Alert.alert('Connection Failed', err.message);
     } finally {
       setOauthLoading(false);
     }
   };
 
-  const handleBrowseDriveSheets = async () => {
+  const handleBrowseDriveSheets = async (customToken) => {
+    const tokenToUse = typeof customToken === 'string' ? customToken : googleUser.accessToken;
+    if (!tokenToUse || !googleUser.signedIn) {
+      Alert.alert('Not Signed In', 'Please sign in with Google Account first!');
+      return;
+    }
     setLoadingDriveSheets(true);
     try {
-      let token = googleUser.accessToken;
-      if (!token || !googleUser.signedIn) {
-        token = await requestGoogleAccessToken();
-        const profile = await fetchGoogleUserProfile(token);
-        const nextSession = {
-          ...googleUser,
-          signedIn: true,
-          accessToken: token,
-          email: profile.email || 'Google Account',
-          name: profile.name || profile.email || 'User',
-        };
-        setGoogleUser(nextSession);
-        await saveGoogleUserSession(nextSession);
-      }
-      const sheets = await fetchUserSpreadsheets(token);
+      const sheets = await fetchUserSpreadsheets(tokenToUse);
       setDriveSpreadsheets(sheets);
       if (sheets.length === 0) {
         Alert.alert('No Spreadsheets Found', 'No existing spreadsheets were found on your Google Drive.');
@@ -479,7 +503,10 @@ export default function GoogleSheetsSyncScreen() {
               <View style={styles.googleCardActions}>
                 <TouchableOpacity
                   style={styles.switchSheetButton}
-                  onPress={() => setGoogleModalVisible(true)}
+                  onPress={() => {
+                    setGoogleModalVisible(true);
+                    handleBrowseDriveSheets();
+                  }}
                 >
                   <Text style={styles.switchSheetButtonText}>Create / Link Sheet</Text>
                 </TouchableOpacity>
@@ -495,7 +522,7 @@ export default function GoogleSheetsSyncScreen() {
           ) : (
             <TouchableOpacity
               style={styles.googleSignInButton}
-              onPress={() => setGoogleModalVisible(true)}
+              onPress={handleGoogleLoginOnly}
             >
               <Text style={styles.googleSignInIcon}>G</Text>
               <Text style={styles.googleSignInText}>Sign in with Google Account</Text>
@@ -626,7 +653,7 @@ export default function GoogleSheetsSyncScreen() {
                 <View style={styles.googleLogoCircleLarge}>
                   <Text style={styles.googleLogoGLarge}>G</Text>
                 </View>
-                <Text style={styles.modalTitle}>Connect Google Account</Text>
+                <Text style={styles.modalTitle}>Choose Spreadsheet</Text>
                 <Text style={styles.modalSubtitle}>
                   Choose whether to link an existing spreadsheet from your Google Drive or create a brand new one.
                 </Text>
@@ -669,10 +696,10 @@ export default function GoogleSheetsSyncScreen() {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
+              <ScrollView style={{ maxHeight: 340, marginBottom: spacing.md }}>
                 {googleModalMode === 'link' ? (
                   <View>
-                    <Text style={styles.inputLabel}>Paste Spreadsheet URL or ID</Text>
+                    <Text style={styles.inputLabel}>Spreadsheet ID or URL</Text>
                     <TextInput
                       style={styles.modalInput}
                       placeholder="https://docs.google.com/spreadsheets/d/1abc.../edit"
@@ -680,15 +707,16 @@ export default function GoogleSheetsSyncScreen() {
                       value={inputSheetIdOrUrl}
                       onChangeText={setInputSheetIdOrUrl}
                       autoCapitalize="none"
+                      autoCorrect={false}
                     />
 
                     <TouchableOpacity
                       style={styles.browseDriveButton}
-                      onPress={handleBrowseDriveSheets}
+                      onPress={() => handleBrowseDriveSheets()}
                       disabled={loadingDriveSheets}
                     >
                       {loadingDriveSheets ? (
-                        <ActivityIndicator color={colors.primary} size="small" />
+                        <ActivityIndicator color={colors.primary} />
                       ) : (
                         <Text style={styles.browseDriveButtonText}>
                           📂 Browse My Google Drive Sheets
@@ -698,7 +726,9 @@ export default function GoogleSheetsSyncScreen() {
 
                     {driveSpreadsheets.length > 0 && (
                       <View style={styles.driveSheetsList}>
-                        <Text style={styles.driveSheetsHeader}>Select a recent sheet:</Text>
+                        <Text style={styles.driveSheetsHeader}>
+                          Select a Spreadsheet from your Google Drive:
+                        </Text>
                         {driveSpreadsheets.map((sheet) => (
                           <TouchableOpacity
                             key={sheet.id}
@@ -750,7 +780,7 @@ export default function GoogleSheetsSyncScreen() {
 
                 <TouchableOpacity
                   style={styles.googleModalAuthButton}
-                  onPress={handleRealGoogleSignIn}
+                  onPress={handleLinkOrCreateSheet}
                   disabled={oauthLoading}
                 >
                   {oauthLoading ? (
