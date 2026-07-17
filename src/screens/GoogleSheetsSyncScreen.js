@@ -238,7 +238,24 @@ export default function GoogleSheetsSyncScreen() {
     setInputSheetIdOrUrl(sheet.id);
   };
 
-  const handleUnlinkSheet = () => {
+  const handleUnlinkSheet = async () => {
+    if (Platform.OS === 'web') {
+      const confirmed = typeof window !== 'undefined' && window.confirm(
+        'Do you want to disconnect this spreadsheet?\n\nYour Google Account will remain signed in so you can pick or create another sheet.'
+      );
+      if (confirmed) {
+        const nextSession = {
+          ...googleUser,
+          spreadsheetId: null,
+          spreadsheetTitle: '',
+          spreadsheetUrl: '',
+        };
+        setGoogleUser(nextSession);
+        await saveGoogleUserSession(nextSession);
+      }
+      return;
+    }
+
     Alert.alert(
       'Unlink Spreadsheet?',
       'Do you want to disconnect this spreadsheet? Your Google Account will remain signed in so you can pick or create another sheet.',
@@ -262,7 +279,26 @@ export default function GoogleSheetsSyncScreen() {
     );
   };
 
-  const handleGoogleSignOut = () => {
+  const handleGoogleSignOut = async () => {
+    if (Platform.OS === 'web') {
+      const confirmed = typeof window !== 'undefined' && window.confirm(
+        `Are you sure you want to log out of your Google Account (${googleUser.email})?`
+      );
+      if (confirmed) {
+        setGoogleUser({
+          signedIn: false,
+          email: '',
+          name: '',
+          accessToken: null,
+          spreadsheetId: null,
+          spreadsheetTitle: '',
+          spreadsheetUrl: '',
+        });
+        await saveGoogleUserSession(null);
+      }
+      return;
+    }
+
     Alert.alert('Sign out of Google?', `Are you sure you want to log out of your Google Account (${googleUser.email})?`, [
       { text: 'Cancel', style: 'cancel' },
       {
