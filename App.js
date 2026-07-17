@@ -188,9 +188,9 @@ export default function App() {
   const vercelUrl = (CONFIG.VERCEL_APP_URL || '').trim();
   const [useOfflineFallback, setUseOfflineFallback] = useState(false);
 
-  // If running on web (`expo export -p web` for Vercel deployment) or no Vercel URL configured,
-  // render the standard React Navigation interface without offline fallback banners.
-  if (Platform.OS === 'web' || !vercelUrl.startsWith('http')) {
+  // If running on web (`expo export -p web` for Vercel deployment), or during local development (__DEV__),
+  // or if no Vercel URL is configured, render the standard React Navigation interface without offline fallback banners.
+  if (Platform.OS === 'web' || (typeof __DEV__ !== 'undefined' && __DEV__) || !vercelUrl.startsWith('http')) {
     return (
       <SafeAreaProvider>
         <NativeAppContent isOfflineFallback={false} />

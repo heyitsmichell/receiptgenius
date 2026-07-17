@@ -102,7 +102,7 @@ export const RECEIPT_RESPONSE_SCHEMA = {
  * @returns {Promise<{success: boolean, data?: object, error?: string, requiresManualInput?: boolean}>}
  */
 export async function scanReceiptImage(base64Image, apiKey) {
-  const activeKey = apiKey || CONFIG.GEMINI_API_KEY;
+  const activeKey = (apiKey && typeof apiKey === 'string' && apiKey.trim()) || (CONFIG.GEMINI_API_KEY && typeof CONFIG.GEMINI_API_KEY === 'string' && CONFIG.GEMINI_API_KEY.trim()) || '';
   const configuredModel = CONFIG.GEMINI_MODEL || 'gemma-4-31b-it';
   // Map legacy or smaller 12B model IDs to Google AI Studio's active 31B instruction-tuned Gemma vision endpoint
   const activeModel =
@@ -111,7 +111,7 @@ export async function scanReceiptImage(base64Image, apiKey) {
   if (!activeKey) {
     return {
       success: false,
-      error: 'Google AI Studio API Key is missing. Please enter it in src/config/config.js.',
+      error: 'Google AI Studio API Key is missing. Please verify EXPO_PUBLIC_GEMINI_API_KEY in your .env file and restart Metro.',
       requiresManualInput: true,
     };
   }

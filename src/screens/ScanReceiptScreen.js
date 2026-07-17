@@ -7,6 +7,8 @@ import {
   Alert,
   ScrollView,
   Platform,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,11 +20,13 @@ import { pushToGoogleSheets } from '../services/sheetsService';
 import {
   saveReceipt,
   getSettings,
+  saveSettings,
   getGoogleUserSession,
   getExportHistory,
   saveExportHistory,
 } from '../services/storageService';
 import { appendReceiptToGoogleSheet } from '../services/googleOAuthSheetsService';
+import { CONFIG } from '../config/config';
 
 export default function ScanReceiptScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
@@ -31,9 +35,27 @@ export default function ScanReceiptScreen({ navigation }) {
   const [parsedReceipt, setParsedReceipt] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const [apiKeyModalVisible, setApiKeyModalVisible] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState('');
+
   // Web Camera live feed state
   const [webCameraActive, setWebCameraActive] = useState(false);
   const videoRef = useRef(null);
+
+  const handleOpenApiKeyModal = async () => {
+    const settings = await getSettings();
+    setTempApiKey(settings.geminiApiKey || CONFIG.GEMINI_API_KEY || '');
+    setApiKeyModalVisible(true);
+  };
+
+  const handleSaveApiKey = async () => {
+    const settings = await getSettings();
+    const updatedKey = tempApiKey.trim();
+    await saveSettings({ ...settings, geminiApiKey: updatedKey });
+    CONFIG.GEMINI_API_KEY = updatedKey;
+    setApiKeyModalVisible(false);
+    Alert.alert('API Key Saved', 'Your Google AI Studio API Key has been saved for OCR scanning.');
+  };
 
   useEffect(() => {
     let stream = null;
@@ -353,6 +375,15 @@ export default function ScanReceiptScreen({ navigation }) {
               Or enter receipt manually →
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.apiKeyLink}
+            onPress={handleOpenApiKeyModal}
+          >
+            <Text style={styles.apiKeyText}>
+              ⚙️ Configure AI Studio API Key
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Multi-stage Loading Overlay */}
@@ -366,6 +397,41 @@ export default function ScanReceiptScreen({ navigation }) {
           onConfirm={handleConfirmReceipt}
           onCancel={() => setReviewVisible(false)}
         />
+
+        {/* API Key Configuration Modal */}
+        <Modal visible={apiKeyModalVisible} animationType="slide" transparent>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Configure AI Studio API Key</Text>
+              <Text style={styles.modalSubtitle}>
+                Enter your Google AI Studio API key (`EXPO_PUBLIC_GEMINI_API_KEY`). This key is stored securely in your browser/device local storage for OCR scans.
+              </Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="AIzaSy..."
+                placeholderTextColor={colors.onSurfaceVariant}
+                value={tempApiKey}
+                onChangeText={setTempApiKey}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalCancelButton]}
+                  onPress={() => setApiKeyModalVisible(false)}
+                >
+                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalSaveButton]}
+                  onPress={handleSaveApiKey}
+                >
+                  <Text style={styles.modalSaveButtonText}>Save Key</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -506,5 +572,74 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     fontSize: 14,
     fontWeight: '500',
+  },
+  apiKeyLink: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    marginTop: 4,
+  },
+  apiKeyText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.surfaceHighest,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.onSurface,
+    marginBottom: spacing.xs,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: colors.onSurfaceVariant,
+    marginBottom: spacing.md,
+    lineHeight: 18,
+  },
+  modalInput: {
+    backgroundColor: colors.surfaceHigh,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    color: colors.onSurface,
+    borderWidth: 1,
+    borderColor: colors.surfaceHighest,
+    fontSize: 14,
+    marginBottom: spacing.lg,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  modalCancelButton: {
+    backgroundColor: colors.surfaceHigh,
+  },
+  modalCancelButtonText: {
+    color: colors.onSurfaceVariant,
+    fontWeight: '600',
+  },
+  modalSaveButton: {
+    backgroundColor: colors.primary,
+  },
+  modalSaveButtonText: {
+    color: '#003824',
+    fontWeight: '700',
   },
 });

@@ -3,6 +3,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CONFIG } from '../config/config';
 
 const RECEIPTS_KEY = '@receiptgenius_receipts';
 const SETTINGS_KEY = '@receiptgenius_settings';
@@ -114,13 +115,20 @@ export async function getSettings() {
     const data = await AsyncStorage.getItem(SETTINGS_KEY);
     if (!data) {
       return {
-        geminiApiKey: '',
-        webhookUrl: '',
+        geminiApiKey: CONFIG.GEMINI_API_KEY || '',
+        webhookUrl: CONFIG.GOOGLE_SHEETS_WEBHOOK_URL || '',
       };
     }
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    return {
+      geminiApiKey: (parsed && parsed.geminiApiKey) || CONFIG.GEMINI_API_KEY || '',
+      webhookUrl: (parsed && parsed.webhookUrl) || CONFIG.GOOGLE_SHEETS_WEBHOOK_URL || '',
+    };
   } catch (error) {
-    return { geminiApiKey: '', webhookUrl: '' };
+    return {
+      geminiApiKey: CONFIG.GEMINI_API_KEY || '',
+      webhookUrl: CONFIG.GOOGLE_SHEETS_WEBHOOK_URL || '',
+    };
   }
 }
 

@@ -24,6 +24,8 @@ import {
   saveExportHistory,
   getGoogleUserSession,
   saveGoogleUserSession,
+  getSettings,
+  saveSettings,
 } from '../services/storageService';
 import { pushToGoogleSheets } from '../services/sheetsService';
 import {
@@ -496,9 +498,11 @@ export default function GoogleSheetsSyncScreen() {
     }
   };
 
-  const handleSaveWebhook = () => {
+  const handleSaveWebhook = async () => {
     setWebhookUrl(tempUrl);
     CONFIG.GOOGLE_SHEETS_WEBHOOK_URL = tempUrl;
+    const currentSettings = await getSettings();
+    await saveSettings({ ...currentSettings, webhookUrl: tempUrl });
     setWebhookModalVisible(false);
     Alert.alert('Webhook Connected', 'Your Google Spreadsheet connection is now active.');
   };
