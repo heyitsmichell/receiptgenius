@@ -216,7 +216,7 @@ export default function GoogleSheetsSyncScreen() {
 
   const handleBrowseDriveSheets = async (customToken) => {
     const tokenToUse = typeof customToken === 'string' ? customToken : googleUser.accessToken;
-    if (!tokenToUse || !googleUser.signedIn) {
+    if (!tokenToUse) {
       Alert.alert('Not Signed In', 'Please sign in with Google Account first!');
       return;
     }
@@ -699,7 +699,68 @@ export default function GoogleSheetsSyncScreen() {
               <ScrollView style={{ maxHeight: 340, marginBottom: spacing.md }}>
                 {googleModalMode === 'link' ? (
                   <View>
-                    <Text style={styles.inputLabel}>Spreadsheet ID or URL</Text>
+                    <View style={{ marginBottom: spacing.md }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+                        <Text style={[styles.inputLabel, { marginBottom: 0 }]}>
+                          📂 Pick from your Google Drive:
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => handleBrowseDriveSheets()}
+                          disabled={loadingDriveSheets}
+                          style={{ paddingHorizontal: 8, paddingVertical: 4, backgroundColor: colors.surfaceHighest, borderRadius: 4 }}
+                        >
+                          <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '700' }}>
+                            {loadingDriveSheets ? 'Loading...' : '🔄 Refresh List'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {loadingDriveSheets ? (
+                        <View style={{ padding: spacing.md, alignItems: 'center' }}>
+                          <ActivityIndicator color={colors.primary} />
+                          <Text style={{ fontSize: 12, color: colors.onSurfaceVariant, marginTop: 6 }}>
+                            Loading your spreadsheets...
+                          </Text>
+                        </View>
+                      ) : driveSpreadsheets.length > 0 ? (
+                        <View style={styles.driveSheetsList}>
+                          {driveSpreadsheets.map((sheet) => (
+                            <TouchableOpacity
+                              key={sheet.id}
+                              style={[
+                                styles.driveSheetItem,
+                                inputSheetIdOrUrl === sheet.id && styles.driveSheetItemActive,
+                              ]}
+                              onPress={() => handleSelectDriveSheet(sheet)}
+                            >
+                              <Text style={styles.driveSheetIcon}>📗</Text>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.driveSheetName} numberOfLines={1}>
+                                  {sheet.name}
+                                </Text>
+                                <Text style={styles.driveSheetId} numberOfLines={1}>
+                                  ID: {sheet.id}
+                                </Text>
+                              </View>
+                              {inputSheetIdOrUrl === sheet.id && (
+                                <Text style={styles.driveSheetCheck}>✓</Text>
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.browseDriveButton}
+                          onPress={() => handleBrowseDriveSheets()}
+                        >
+                          <Text style={styles.browseDriveButtonText}>
+                            📂 Load My Google Drive Spreadsheets
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    <Text style={styles.inputLabel}>Or paste Spreadsheet ID/URL manually:</Text>
                     <TextInput
                       style={styles.modalInput}
                       placeholder="https://docs.google.com/spreadsheets/d/1abc.../edit"
@@ -709,51 +770,6 @@ export default function GoogleSheetsSyncScreen() {
                       autoCapitalize="none"
                       autoCorrect={false}
                     />
-
-                    <TouchableOpacity
-                      style={styles.browseDriveButton}
-                      onPress={() => handleBrowseDriveSheets()}
-                      disabled={loadingDriveSheets}
-                    >
-                      {loadingDriveSheets ? (
-                        <ActivityIndicator color={colors.primary} />
-                      ) : (
-                        <Text style={styles.browseDriveButtonText}>
-                          📂 Browse My Google Drive Sheets
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-
-                    {driveSpreadsheets.length > 0 && (
-                      <View style={styles.driveSheetsList}>
-                        <Text style={styles.driveSheetsHeader}>
-                          Select a Spreadsheet from your Google Drive:
-                        </Text>
-                        {driveSpreadsheets.map((sheet) => (
-                          <TouchableOpacity
-                            key={sheet.id}
-                            style={[
-                              styles.driveSheetItem,
-                              inputSheetIdOrUrl === sheet.id && styles.driveSheetItemActive,
-                            ]}
-                            onPress={() => handleSelectDriveSheet(sheet)}
-                          >
-                            <Text style={styles.driveSheetIcon}>📗</Text>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.driveSheetName} numberOfLines={1}>
-                                {sheet.name}
-                              </Text>
-                              <Text style={styles.driveSheetId} numberOfLines={1}>
-                                ID: {sheet.id}
-                              </Text>
-                            </View>
-                            {inputSheetIdOrUrl === sheet.id && (
-                              <Text style={styles.driveSheetCheck}>✓</Text>
-                            )}
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
                   </View>
                 ) : (
                   <View>
