@@ -512,12 +512,19 @@ export default function GoogleSheetsSyncScreen() {
 
   const [exportingLocal, setExportingLocal] = useState(false);
   const [exportTimeframe, setExportTimeframe] = useState('All Time');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
 
   const handleExportLocal = async (format) => {
     try {
       setExportingLocal(true);
       const rawReceipts = await getReceipts();
-      const allReceipts = filterReceiptsByDate(rawReceipts, exportTimeframe);
+      const allReceipts = filterReceiptsByDate(
+        rawReceipts,
+        exportTimeframe,
+        customStart,
+        customEnd
+      );
       if (!allReceipts || allReceipts.length === 0) {
         Alert.alert('No Matching Receipts', `You have no scanned receipts matching the "${exportTimeframe}" date filter.`);
         return;
@@ -527,7 +534,14 @@ export default function GoogleSheetsSyncScreen() {
       let filename = '';
       let mimeType = '';
 
-      const tfTag = exportTimeframe === 'All Time' ? '' : `_${exportTimeframe.replace(/\s+/g, '')}`;
+      let tfTag = '';
+      if (exportTimeframe === 'Custom Range') {
+        const s = customStart.replace(/[\/\.-]/g, '') || 'Start';
+        const e = customEnd.replace(/[\/\.-]/g, '') || 'End';
+        tfTag = `_${s}to${e}`;
+      } else if (exportTimeframe !== 'All Time') {
+        tfTag = `_${exportTimeframe.replace(/\s+/g, '')}`;
+      }
 
       if (format === 'csv') {
         filename = `ReceiptGenius_Backup_${new Date().toISOString().slice(0, 10)}${tfTag}.csv`;
@@ -813,12 +827,51 @@ export default function GoogleSheetsSyncScreen() {
                           selected && styles.timeframeChipTextSelected,
                         ]}
                       >
-                        📅 {tf}
+                        {tf === 'Custom Range' ? '📆 Custom Range' : `📅 ${tf}`}
                       </Text>
                     </TouchableOpacity>
                   );
                 })}
               </ScrollView>
+
+              {exportTimeframe === 'Custom Range' && (
+                <View style={[styles.customDateRow, { marginTop: 10, paddingHorizontal: 0 }]}>
+                  <View style={styles.customDateBox}>
+                    <Text style={styles.customDateLabel}>FROM (DD/MM/YY)</Text>
+                    <TextInput
+                      style={styles.customDateInput}
+                      placeholder="01/07/26"
+                      placeholderTextColor={colors.onSurfaceVariant}
+                      value={customStart}
+                      onChangeText={setCustomStart}
+                      maxLength={10}
+                    />
+                  </View>
+                  <Text style={styles.customDateToText}>to</Text>
+                  <View style={styles.customDateBox}>
+                    <Text style={styles.customDateLabel}>TO (DD/MM/YY)</Text>
+                    <TextInput
+                      style={styles.customDateInput}
+                      placeholder="18/07/26"
+                      placeholderTextColor={colors.onSurfaceVariant}
+                      value={customEnd}
+                      onChangeText={setCustomEnd}
+                      maxLength={10}
+                    />
+                  </View>
+                  {(customStart !== '' || customEnd !== '') && (
+                    <TouchableOpacity
+                      style={styles.customDateClearBtn}
+                      onPress={() => {
+                        setCustomStart('');
+                        setCustomEnd('');
+                      }}
+                    >
+                      <Text style={styles.customDateClearText}>✕</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             </View>
 
             <View style={styles.backupButtonsRow}>
@@ -1376,6 +1429,52 @@ const styles = StyleSheet.create({
   },
   timeframeChipTextSelected: {
     color: colors.primary,
+    fontWeight: '700',
+  },
+  customDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    gap: 8,
+  },
+  customDateBox: {
+    flex: 1,
+  },
+  customDateLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.onSurfaceVariant,
+    marginBottom: 4,
+  },
+  customDateInput: {
+    backgroundColor: colors.surfaceHigh,
+    color: colors.onSurface,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: colors.surfaceHighest,
+  },
+  customDateToText: {
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    fontWeight: '600',
+    marginTop: 14,
+  },
+  customDateClearBtn: {
+    marginTop: 14,
+    backgroundColor: 'rgba(255, 100, 100, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 100, 100, 0.3)',
+  },
+  customDateClearText: {
+    color: '#ff6b6b',
+    fontSize: 13,
     fontWeight: '700',
   },
   section: {

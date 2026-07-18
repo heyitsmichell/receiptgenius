@@ -35,6 +35,8 @@ export default function SpendingHistoryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTimeframe, setSelectedTimeframe] = useState('All Time');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
@@ -56,7 +58,12 @@ export default function SpendingHistoryScreen() {
   };
 
   const filteredReceipts = useMemo(() => {
-    const byDate = filterReceiptsByDate(receipts, selectedTimeframe);
+    const byDate = filterReceiptsByDate(
+      receipts,
+      selectedTimeframe,
+      customStartDate,
+      customEndDate
+    );
     return byDate.filter((r) => {
       const matchesSearch =
         (r.merchant || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -67,7 +74,14 @@ export default function SpendingHistoryScreen() {
 
       return matchesSearch && matchesCategory;
     });
-  }, [receipts, searchQuery, selectedCategory, selectedTimeframe]);
+  }, [
+    receipts,
+    searchQuery,
+    selectedCategory,
+    selectedTimeframe,
+    customStartDate,
+    customEndDate,
+  ]);
 
   const filteredTotal = useMemo(() => {
     return filteredReceipts.reduce(
@@ -137,13 +151,53 @@ export default function SpendingHistoryScreen() {
                       selected && styles.timeframeChipTextSelected,
                     ]}
                   >
-                    📅 {tf}
+                    {tf === 'Custom Range' ? '📆 Custom Range' : `📅 ${tf}`}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
         </View>
+
+        {/* Custom Date Range Input Row */}
+        {selectedTimeframe === 'Custom Range' && (
+          <View style={styles.customDateRow}>
+            <View style={styles.customDateBox}>
+              <Text style={styles.customDateLabel}>FROM (DD/MM/YY)</Text>
+              <TextInput
+                style={styles.customDateInput}
+                placeholder="01/07/26"
+                placeholderTextColor={colors.onSurfaceVariant}
+                value={customStartDate}
+                onChangeText={setCustomStartDate}
+                maxLength={10}
+              />
+            </View>
+            <Text style={styles.customDateToText}>to</Text>
+            <View style={styles.customDateBox}>
+              <Text style={styles.customDateLabel}>TO (DD/MM/YY)</Text>
+              <TextInput
+                style={styles.customDateInput}
+                placeholder="18/07/26"
+                placeholderTextColor={colors.onSurfaceVariant}
+                value={customEndDate}
+                onChangeText={setCustomEndDate}
+                maxLength={10}
+              />
+            </View>
+            {(customStartDate !== '' || customEndDate !== '') && (
+              <TouchableOpacity
+                style={styles.customDateClearBtn}
+                onPress={() => {
+                  setCustomStartDate('');
+                  setCustomEndDate('');
+                }}
+              >
+                <Text style={styles.customDateClearText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Category Pill Filters */}
         <View style={styles.filterWrapper}>
@@ -301,6 +355,52 @@ const styles = StyleSheet.create({
   },
   timeframeChipTextSelected: {
     color: colors.primary,
+    fontWeight: '700',
+  },
+  customDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    gap: 8,
+  },
+  customDateBox: {
+    flex: 1,
+  },
+  customDateLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.onSurfaceVariant,
+    marginBottom: 4,
+  },
+  customDateInput: {
+    backgroundColor: colors.surfaceHigh,
+    color: colors.onSurface,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: colors.surfaceHighest,
+  },
+  customDateToText: {
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    fontWeight: '600',
+    marginTop: 14,
+  },
+  customDateClearBtn: {
+    marginTop: 14,
+    backgroundColor: 'rgba(255, 100, 100, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 100, 100, 0.3)',
+  },
+  customDateClearText: {
+    color: '#ff6b6b',
+    fontSize: 13,
     fontWeight: '700',
   },
   listContainer: {
