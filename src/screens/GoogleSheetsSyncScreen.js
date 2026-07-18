@@ -605,6 +605,33 @@ export default function GoogleSheetsSyncScreen() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+      } else if (Platform.OS === 'android') {
+        try {
+          const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+          if (permissions.granted) {
+            const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+              permissions.directoryUri,
+              filename,
+              mimeType
+            );
+            await FileSystem.writeAsStringAsync(fileUri, content, {
+              encoding: FileSystem.EncodingType.UTF8,
+            });
+          } else {
+            return;
+          }
+        } catch (safErr) {
+          const fileUri = `${FileSystem.documentDirectory}${filename}`;
+          await FileSystem.writeAsStringAsync(fileUri, content, {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri, {
+              mimeType: mimeType,
+              dialogTitle: `Export ${filename}`,
+            });
+          }
+        }
       } else {
         const fileUri = `${FileSystem.documentDirectory}${filename}`;
         await FileSystem.writeAsStringAsync(fileUri, content, {
