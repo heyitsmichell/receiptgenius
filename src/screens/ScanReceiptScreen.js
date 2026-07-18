@@ -24,8 +24,10 @@ import {
   saveExportHistory,
 } from '../services/storageService';
 import { appendReceiptToGoogleSheet } from '../services/googleOAuthSheetsService';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ScanReceiptScreen({ navigation }) {
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState('');
   const [reviewVisible, setReviewVisible] = useState(false);
@@ -252,15 +254,15 @@ export default function ScanReceiptScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>AI Receipt Scanner</Text>
+          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>AI Receipt Scanner</Text>
           <Text style={styles.headerSubtitle}>
             Position receipt within frame or select from gallery
           </Text>

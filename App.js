@@ -14,6 +14,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from './src/theme/theme';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { CONFIG } from './src/config/config';
 
 import DashboardScreen from './src/screens/DashboardScreen';
@@ -22,18 +23,6 @@ import SpendingHistoryScreen from './src/screens/SpendingHistoryScreen';
 import GoogleSheetsSyncScreen from './src/screens/GoogleSheetsSyncScreen';
 
 const Tab = createBottomTabNavigator();
-
-const DarkNavigationTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    background: colors.background,
-    card: colors.surface,
-    text: colors.onSurface,
-    border: colors.surfaceHighest,
-    primary: colors.primary,
-  },
-};
 
 function HybridWebShell({ targetUrl, onFallbackToOffline }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -116,9 +105,23 @@ function HybridWebShell({ targetUrl, onFallbackToOffline }) {
 }
 
 function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
+  const { isDark, colors } = useTheme();
+
+  const navTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.onSurface,
+      border: colors.surfaceHighest,
+      primary: colors.primary,
+    },
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" backgroundColor={colors.background} />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={colors.background} />
       {isOfflineFallback && (
         <View style={styles.offlineBanner}>
           <Text style={styles.offlineBannerText}>
@@ -131,7 +134,7 @@ function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
           )}
         </View>
       )}
-      <NavigationContainer theme={DarkNavigationTheme}>
+      <NavigationContainer theme={navTheme}>
         <Tab.Navigator
           screenOptions={({ route }) => ({
             headerShown: false,
@@ -207,7 +210,9 @@ export default function App() {
   if (Platform.OS === 'web' || (typeof __DEV__ !== 'undefined' && __DEV__) || !vercelUrl.startsWith('http')) {
     return (
       <SafeAreaProvider>
-        <NativeAppContent isOfflineFallback={false} />
+        <ThemeProvider>
+          <NativeAppContent isOfflineFallback={false} />
+        </ThemeProvider>
       </SafeAreaProvider>
     );
   }
@@ -217,10 +222,12 @@ export default function App() {
   if (useOfflineFallback) {
     return (
       <SafeAreaProvider>
-        <NativeAppContent
-          isOfflineFallback={true}
-          onRetryOnline={() => setUseOfflineFallback(false)}
-        />
+        <ThemeProvider>
+          <NativeAppContent
+            isOfflineFallback={true}
+            onRetryOnline={() => setUseOfflineFallback(false)}
+          />
+        </ThemeProvider>
       </SafeAreaProvider>
     );
   }
@@ -228,10 +235,12 @@ export default function App() {
   // Otherwise, render the hybrid WebView shell pointing to Vercel
   return (
     <SafeAreaProvider>
-      <HybridWebShell
-        targetUrl={vercelUrl}
-        onFallbackToOffline={() => setUseOfflineFallback(true)}
-      />
+      <ThemeProvider>
+        <HybridWebShell
+          targetUrl={vercelUrl}
+          onFallbackToOffline={() => setUseOfflineFallback(true)}
+        />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

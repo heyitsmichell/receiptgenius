@@ -1,9 +1,9 @@
 /**
  * ReceiptGenius Design System & Theme Tokens
- * Derived directly from the Stitch UI specifications (#0b1326 dark navy background, #4edea3 emerald accent).
+ * Supports dark mode (#0b1326 dark navy background) and light mode (#f8fafc light background).
  */
 
-export const colors = {
+export const darkColors = {
   // Brand & Accent
   primary: '#4edea3',
   primaryContainer: '#10b981',
@@ -47,6 +47,54 @@ export const colors = {
     'Other': '#94a3b8',
   },
 };
+
+export const lightColors = {
+  // Brand & Accent
+  primary: '#10b981',
+  primaryContainer: '#4edea3',
+  onPrimary: '#ffffff',
+  inversePrimary: '#003824',
+
+  // Secondary
+  secondary: '#2563eb',
+  onSecondary: '#ffffff',
+  secondaryContainer: '#dbeafe',
+
+  // Light Mode Surface & Backgrounds
+  background: '#f8fafc',
+  surface: '#ffffff',
+  surfaceHigh: '#f1f5f9',
+  surfaceHighest: '#e2e8f0',
+  surfaceBright: '#cbd5e1',
+
+  // Typography & On-Surface
+  onSurface: '#0f172a',
+  onSurfaceVariant: '#475569',
+  outline: '#94a3b8',
+  outlineVariant: '#cbd5e1',
+
+  // Status & Alerts
+  error: '#ef4444',
+  errorContainer: '#fee2e2',
+  onError: '#ffffff',
+  success: '#10b981',
+  warning: '#f59e0b',
+
+  // Categories Color Mapping
+  categories: {
+    'Food & Dining': '#10b981',
+    'Groceries': '#0284c7',
+    'Transportation': '#e11d48',
+    'Shopping': '#9333ea',
+    'Utilities & Bills': '#ea580c',
+    'Entertainment': '#db2777',
+    'Healthcare': '#0d9488',
+    'Other': '#64748b',
+  },
+};
+
+// Mutable colors object defaulting to dark colors (updated when theme switches)
+export const colors = { ...darkColors };
 
 export const spacing = {
   xs: 4,
@@ -98,27 +146,6 @@ export const typography = {
     fontWeight: '600',
     color: colors.onSurfaceVariant,
     textTransform: 'uppercase',
-  },
-  monoData: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-};
-
-export const shadows = {
-  card: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  glow: {
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    elevation: 8,
+    letterSpacing: 0.5,
   },
 };

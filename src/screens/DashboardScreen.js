@@ -17,6 +17,7 @@ import ReceiptCard from '../components/ReceiptCard';
 import ReceiptEditModal from '../components/ReceiptEditModal';
 import { getReceipts } from '../services/storageService';
 import { getLiveHKDExchangeRates } from '../services/currencyService';
+import { useTheme } from '../context/ThemeContext';
 
 const CURRENCY_SYMBOLS = {
   HKD: 'HKD ',
@@ -41,6 +42,7 @@ const CURRENCY_INFO = {
 const AVAILABLE_CURRENCIES = ['HKD', 'USD', 'CNY', 'JPY', 'EUR', 'GBP', 'SGD'];
 
 export default function DashboardScreen({ navigation }) {
+  const { isDark, toggleTheme, colors } = useTheme();
   const [receipts, setReceipts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
@@ -117,9 +119,9 @@ export default function DashboardScreen({ navigation }) {
   const pendingCount = receipts.length - syncedCount;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.contentContainer}
         refreshControl={
           <RefreshControl
@@ -132,14 +134,26 @@ export default function DashboardScreen({ navigation }) {
         {/* Top Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.appTitle}>ReceiptGenius</Text>
+            <Text style={[styles.appTitle, { color: colors.onSurface }]}>ReceiptGenius</Text>
           </View>
-          <TouchableOpacity
-            style={styles.scanHeaderButton}
-            onPress={() => navigation.navigate('Scan')}
-          >
-            <Text style={styles.scanHeaderButtonText}>+ Scan</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <TouchableOpacity
+              style={styles.themeToggleBtn}
+              onPress={toggleTheme}
+            >
+              <Ionicons
+                name={isDark ? 'sunny' : 'moon'}
+                size={20}
+                color={isDark ? '#fbbf24' : '#64748b'}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.scanHeaderButton}
+              onPress={() => navigation.navigate('Scan')}
+            >
+              <Text style={styles.scanHeaderButtonText}>+ Scan</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Hero KPI Summary Card */}
@@ -357,6 +371,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.onSurfaceVariant,
     marginTop: 2,
+  },
+  themeToggleBtn: {
+    backgroundColor: colors.surfaceHigh,
+    width: 38,
+    height: 38,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.surfaceHighest,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scanHeaderButton: {
     backgroundColor: colors.primary,

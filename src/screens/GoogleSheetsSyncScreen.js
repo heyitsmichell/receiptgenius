@@ -18,6 +18,7 @@ import {
 import * as FileSystem from 'expo-file-system';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import { CONFIG } from '../config/config';
 import {
   getReceipts,
@@ -43,6 +44,7 @@ import {
 } from '../services/googleOAuthSheetsService';
 
 export default function GoogleSheetsSyncScreen() {
+  const { colors } = useTheme();
   const [autoSync, setAutoSync] = useState(true);
   const [lastSynced, setLastSynced] = useState('Checking...');
   const [syncing, setSyncing] = useState(false);
@@ -635,16 +637,16 @@ export default function GoogleSheetsSyncScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         {/* Header Section */}
         <View style={styles.headerRow}>
           <View style={styles.headerTextCol}>
-            <Text style={styles.title}>Google Sheets Integration</Text>
+            <Text style={[styles.title, { color: colors.onSurface }]}>Google Sheets Integration</Text>
             <Text style={styles.subtitle}>
               Manage your automated receipt exports and connected spreadsheets.
             </Text>

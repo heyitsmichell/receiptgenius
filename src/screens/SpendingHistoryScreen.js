@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, borderRadius } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import ReceiptCard from '../components/ReceiptCard';
 import ReceiptEditModal from '../components/ReceiptEditModal';
 import CalendarPickerModal from '../components/CalendarPickerModal';
@@ -32,6 +33,7 @@ const FILTER_CATEGORIES = [
 ];
 
 export default function SpendingHistoryScreen() {
+  const { colors } = useTheme();
   const [receipts, setReceipts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -107,12 +109,12 @@ export default function SpendingHistoryScreen() {
   const keyExtractor = useCallback((item) => String(item.id), []);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Spending History</Text>
+            <Text style={[styles.title, { color: colors.onSurface }]}>Spending History</Text>
             <Text style={styles.subtitle}>
               {filteredReceipts.length} transactions recorded (HKD {filteredTotal.toFixed(2)})
             </Text>
