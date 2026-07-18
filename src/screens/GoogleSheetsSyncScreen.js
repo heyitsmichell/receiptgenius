@@ -638,11 +638,11 @@ export default function GoogleSheetsSyncScreen() {
               <Text style={styles.googleCardTitle}>
                 {googleUser.signedIn ? 'Google Account Connected' : 'Connect with Google'}
               </Text>
-              <Text style={styles.googleCardSubtitle}>
-                {googleUser.signedIn
-                  ? `Signed in as ${googleUser.email}`
-                  : 'Real OAuth 2.0 connection to create & sync spreadsheets automatically'}
-              </Text>
+              {googleUser.signedIn && (
+                <Text style={styles.googleCardSubtitle}>
+                  Signed in as {googleUser.email}
+                </Text>
+              )}
             </View>
           </View>
 
@@ -730,9 +730,6 @@ export default function GoogleSheetsSyncScreen() {
               <Text style={styles.cardIconText}>🔄</Text>
               <View>
                 <Text style={styles.cardTitle}>Auto-Sync Receipts</Text>
-                <Text style={styles.cardSubtitle}>
-                  Automatically export new receipts as they are processed.
-                </Text>
               </View>
             </View>
 
@@ -784,9 +781,6 @@ export default function GoogleSheetsSyncScreen() {
                 <Text style={styles.sheetGreenIcon}>💾</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sheetName}>Export Directly to Device</Text>
-                  <Text style={[styles.sheetCardSubtitle, { marginTop: 2 }]}>
-                    Save a local backup file directly to your device storage or share via email and apps without needing a cloud connection.
-                  </Text>
                 </View>
               </View>
             </View>
@@ -801,7 +795,6 @@ export default function GoogleSheetsSyncScreen() {
                 <Text style={styles.backupExportIconText}>📑</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.backupButtonTitle}>Export CSV Table</Text>
-                  <Text style={styles.backupButtonSubtitle}>For Excel, Numbers & Sheets</Text>
                 </View>
               </TouchableOpacity>
 
@@ -814,7 +807,6 @@ export default function GoogleSheetsSyncScreen() {
                 <Text style={styles.backupExportIconText}>📦</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.backupButtonTitle}>Export JSON Backup</Text>
-                  <Text style={styles.backupButtonSubtitle}>Full ledger dataset & metadata</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -1342,6 +1334,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: colors.onSurface,
+    marginBottom: spacing.md,
   },
   sectionBadgeText: {
     fontSize: 12,
@@ -1408,12 +1401,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
     overflow: 'hidden',
+    marginTop: spacing.sm,
   },
   historyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.md,
+    paddingVertical: 20,
+    paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.surfaceHighest,
   },

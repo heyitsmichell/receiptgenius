@@ -133,7 +133,6 @@ export default function DashboardScreen({ navigation }) {
         <View style={styles.header}>
           <View>
             <Text style={styles.appTitle}>ReceiptGenius</Text>
-            <Text style={styles.subtitle}>AI-Powered Receipt & Ledger Sync</Text>
           </View>
           <TouchableOpacity
             style={styles.scanHeaderButton}
