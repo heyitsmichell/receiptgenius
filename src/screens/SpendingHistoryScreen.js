@@ -15,6 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import ReceiptCard from '../components/ReceiptCard';
 import ReceiptEditModal from '../components/ReceiptEditModal';
+import CalendarPickerModal from '../components/CalendarPickerModal';
 import { getReceipts } from '../services/storageService';
 import { DATE_TIMEFRAMES, filterReceiptsByDate } from '../utils/dateFilters';
 
@@ -37,6 +38,8 @@ export default function SpendingHistoryScreen() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('All Time');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [calendarVisible, setCalendarVisible] = useState(false);
+  const [calendarTarget, setCalendarTarget] = useState('start');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
@@ -151,7 +154,7 @@ export default function SpendingHistoryScreen() {
                       selected && styles.timeframeChipTextSelected,
                     ]}
                   >
-                    {tf === 'Custom Range' ? '📆 Custom Range' : `📅 ${tf}`}
+                    {tf === 'Custom Range' ? 'Custom Range' : tf}
                   </Text>
                 </TouchableOpacity>
               );
@@ -164,26 +167,32 @@ export default function SpendingHistoryScreen() {
           <View style={styles.customDateRow}>
             <View style={styles.customDateBox}>
               <Text style={styles.customDateLabel}>FROM (DD/MM/YY)</Text>
-              <TextInput
-                style={styles.customDateInput}
-                placeholder="01/07/26"
-                placeholderTextColor={colors.onSurfaceVariant}
-                value={customStartDate}
-                onChangeText={setCustomStartDate}
-                maxLength={10}
-              />
+              <TouchableOpacity
+                style={styles.datePickerBtn}
+                onPress={() => {
+                  setCalendarTarget('start');
+                  setCalendarVisible(true);
+                }}
+              >
+                <Text style={styles.datePickerBtnText}>
+                  {customStartDate || 'Select Start Date'}
+                </Text>
+              </TouchableOpacity>
             </View>
             <Text style={styles.customDateToText}>to</Text>
             <View style={styles.customDateBox}>
               <Text style={styles.customDateLabel}>TO (DD/MM/YY)</Text>
-              <TextInput
-                style={styles.customDateInput}
-                placeholder="18/07/26"
-                placeholderTextColor={colors.onSurfaceVariant}
-                value={customEndDate}
-                onChangeText={setCustomEndDate}
-                maxLength={10}
-              />
+              <TouchableOpacity
+                style={styles.datePickerBtn}
+                onPress={() => {
+                  setCalendarTarget('end');
+                  setCalendarVisible(true);
+                }}
+              >
+                <Text style={styles.datePickerBtnText}>
+                  {customEndDate || 'Select End Date'}
+                </Text>
+              </TouchableOpacity>
             </View>
             {(customStartDate !== '' || customEndDate !== '') && (
               <TouchableOpacity
@@ -261,6 +270,20 @@ export default function SpendingHistoryScreen() {
         receipt={selectedReceipt}
         onClose={() => setSelectedReceipt(null)}
         onUpdated={loadReceipts}
+      />
+
+      <CalendarPickerModal
+        visible={calendarVisible}
+        onClose={() => setCalendarVisible(false)}
+        initialDate={calendarTarget === 'start' ? customStartDate : customEndDate}
+        title={calendarTarget === 'start' ? 'Select Start Date' : 'Select End Date'}
+        onSelect={(dateStr) => {
+          if (calendarTarget === 'start') {
+            setCustomStartDate(dateStr);
+          } else {
+            setCustomEndDate(dateStr);
+          }
+        }}
       />
     </SafeAreaView>
   );
@@ -373,15 +396,19 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     marginBottom: 4,
   },
-  customDateInput: {
+  datePickerBtn: {
     backgroundColor: colors.surfaceHigh,
-    color: colors.onSurface,
     borderRadius: borderRadius.sm,
     paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 13,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
+    justifyContent: 'center',
+  },
+  datePickerBtnText: {
+    color: colors.onSurface,
+    fontSize: 13,
+    fontWeight: '600',
   },
   customDateToText: {
     fontSize: 12,
