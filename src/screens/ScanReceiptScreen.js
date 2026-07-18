@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import LoadingOverlay from '../components/LoadingOverlay';
@@ -67,12 +68,23 @@ export default function ScanReceiptScreen({ navigation }) {
     };
   }, [webCameraActive]);
 
-  const stopWebcam = () => {
+  const stopWebcam = useCallback(() => {
     if (videoRef.current && videoRef.current.srcObject) {
       videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
     }
     setWebCameraActive(false);
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (webCameraActive) {
+          stopWebcam();
+        }
+      };
+    }, [webCameraActive, stopWebcam])
+  );
 
   const captureWebcamPhoto = () => {
     if (!videoRef.current || Platform.OS !== 'web') return;

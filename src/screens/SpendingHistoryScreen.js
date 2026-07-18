@@ -1,12 +1,14 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -51,21 +53,38 @@ export default function SpendingHistoryScreen() {
     setRefreshing(false);
   };
 
-  const filteredReceipts = receipts.filter((r) => {
-    const matchesSearch =
-      (r.merchant || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (r.category || '').toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredReceipts = useMemo(() => {
+    return receipts.filter((r) => {
+      const matchesSearch =
+        (r.merchant || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (r.category || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesCategory =
-      selectedCategory === 'All' || r.category === selectedCategory;
+      const matchesCategory =
+        selectedCategory === 'All' || r.category === selectedCategory;
 
-    return matchesSearch && matchesCategory;
-  });
+      return matchesSearch && matchesCategory;
+    });
+  }, [receipts, searchQuery, selectedCategory]);
 
-  const filteredTotal = filteredReceipts.reduce(
-    (sum, r) => sum + Number(r.totalAmount || 0),
-    0
-  );
+  const filteredTotal = useMemo(() => {
+    return filteredReceipts.reduce(
+      (sum, r) => sum + Number(r.totalAmount || 0),
+      0
+    );
+  }, [filteredReceipts]);
+
+  const handleSelectReceipt = useCallback((receipt) => {
+    setSelectedReceipt(receipt);
+  }, []);
+
+  const renderReceiptItem = useCallback(({ item }) => (
+    <ReceiptCard
+      receipt={item}
+      onPress={handleSelectReceipt}
+    />
+  ), [handleSelectReceipt]);
+
+  const keyExtractor = useCallback((item) => String(item.id), []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -124,8 +143,15 @@ export default function SpendingHistoryScreen() {
         </View>
 
         {/* Receipts List */}
-        <ScrollView
+        <FlatList
+          data={filteredReceipts}
+          renderItem={renderReceiptItem}
+          keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContainer}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS !== 'web'}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -133,21 +159,12 @@ export default function SpendingHistoryScreen() {
               tintColor={colors.primary}
             />
           }
-        >
-          {filteredReceipts.length === 0 ? (
+          ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No matching receipts found.</Text>
             </View>
-          ) : (
-            filteredReceipts.map((receipt) => (
-              <ReceiptCard
-                key={receipt.id}
-                receipt={receipt}
-                onPress={() => setSelectedReceipt(receipt)}
-              />
-            ))
-          )}
-        </ScrollView>
+          }
+        />
       </View>
 
       <ReceiptEditModal

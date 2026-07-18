@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
 
-export default function ReceiptCard({ receipt, onPress }) {
+const ReceiptCard = React.memo(function ReceiptCard({ receipt, onPress }) {
   const categoryColor = colors.categories[receipt.category] || colors.primary;
   const isSynced = receipt.syncStatus === 'synced' || receipt.syncedToSheets;
 
@@ -56,7 +56,9 @@ export default function ReceiptCard({ receipt, onPress }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
+
+export default ReceiptCard;
 
 const styles = StyleSheet.create({
   card: {
