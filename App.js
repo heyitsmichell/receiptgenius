@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from './src/theme/theme';
 import { CONFIG } from './src/config/config';
 
@@ -132,10 +133,23 @@ function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
       )}
       <NavigationContainer theme={DarkNavigationTheme}>
         <Tab.Navigator
-          screenOptions={{
+          screenOptions={({ route }) => ({
             headerShown: false,
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.onSurfaceVariant,
+            tabBarIcon: ({ focused, color, size }) => {
+              let iconName = 'ellipse';
+              if (route.name === 'Dashboard') {
+                iconName = focused ? 'grid' : 'grid-outline';
+              } else if (route.name === 'Scan') {
+                iconName = focused ? 'camera' : 'camera-outline';
+              } else if (route.name === 'History') {
+                iconName = focused ? 'receipt' : 'receipt-outline';
+              } else if (route.name === 'SheetsSync') {
+                iconName = focused ? 'sync-circle' : 'sync-circle-outline';
+              }
+              return <Ionicons name={iconName} size={22} color={color} />;
+            },
             tabBarStyle: {
               backgroundColor: colors.surface,
               borderTopColor: colors.surfaceHighest,
@@ -148,7 +162,7 @@ function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
               fontSize: 12,
               fontWeight: '600',
             },
-          }}
+          })}
         >
           <Tab.Screen
             name="Dashboard"
@@ -161,21 +175,21 @@ function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
             name="Scan"
             component={ScanReceiptScreen}
             options={{
-              tabBarLabel: 'Scan Receipt',
+              tabBarLabel: 'Scan',
             }}
           />
           <Tab.Screen
             name="History"
             component={SpendingHistoryScreen}
             options={{
-              tabBarLabel: 'History & Ledger',
+              tabBarLabel: 'History',
             }}
           />
           <Tab.Screen
             name="SheetsSync"
             component={GoogleSheetsSyncScreen}
             options={{
-              tabBarLabel: 'Sheets Sync',
+              tabBarLabel: 'Sync',
             }}
           />
         </Tab.Navigator>
