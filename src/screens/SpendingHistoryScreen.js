@@ -16,6 +16,7 @@ import { colors, spacing, borderRadius } from '../theme/theme';
 import ReceiptCard from '../components/ReceiptCard';
 import ReceiptEditModal from '../components/ReceiptEditModal';
 import { getReceipts } from '../services/storageService';
+import { DATE_TIMEFRAMES, filterReceiptsByDate } from '../utils/dateFilters';
 
 const FILTER_CATEGORIES = [
   'All',
@@ -33,6 +34,7 @@ export default function SpendingHistoryScreen() {
   const [receipts, setReceipts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedTimeframe, setSelectedTimeframe] = useState('All Time');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
@@ -54,7 +56,8 @@ export default function SpendingHistoryScreen() {
   };
 
   const filteredReceipts = useMemo(() => {
-    return receipts.filter((r) => {
+    const byDate = filterReceiptsByDate(receipts, selectedTimeframe);
+    return byDate.filter((r) => {
       const matchesSearch =
         (r.merchant || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (r.category || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -64,7 +67,7 @@ export default function SpendingHistoryScreen() {
 
       return matchesSearch && matchesCategory;
     });
-  }, [receipts, searchQuery, selectedCategory]);
+  }, [receipts, searchQuery, selectedCategory, selectedTimeframe]);
 
   const filteredTotal = useMemo(() => {
     return filteredReceipts.reduce(
@@ -108,6 +111,38 @@ export default function SpendingHistoryScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+        </View>
+
+        {/* Date Timeframe Pill Filters */}
+        <View style={[styles.filterWrapper, { marginBottom: 6 }]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryFilters}
+          >
+            {DATE_TIMEFRAMES.map((tf) => {
+              const selected = tf === selectedTimeframe;
+              return (
+                <TouchableOpacity
+                  key={tf}
+                  style={[
+                    styles.timeframeChip,
+                    selected && styles.timeframeChipSelected,
+                  ]}
+                  onPress={() => setSelectedTimeframe(tf)}
+                >
+                  <Text
+                    style={[
+                      styles.timeframeChipText,
+                      selected && styles.timeframeChipTextSelected,
+                    ]}
+                  >
+                    📅 {tf}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         {/* Category Pill Filters */}
@@ -245,6 +280,27 @@ const styles = StyleSheet.create({
   },
   filterChipTextSelected: {
     color: colors.onSurface,
+    fontWeight: '700',
+  },
+  timeframeChip: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.surfaceHighest,
+  },
+  timeframeChipSelected: {
+    backgroundColor: colors.surfaceHigh,
+    borderColor: colors.primary,
+  },
+  timeframeChipText: {
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    fontWeight: '600',
+  },
+  timeframeChipTextSelected: {
+    color: colors.primary,
     fontWeight: '700',
   },
   listContainer: {

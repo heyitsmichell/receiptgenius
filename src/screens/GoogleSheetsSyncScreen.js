@@ -29,6 +29,7 @@ import {
   getSettings,
   saveSettings,
 } from '../services/storageService';
+import { DATE_TIMEFRAMES, filterReceiptsByDate } from '../utils/dateFilters';
 import { pushToGoogleSheets } from '../services/sheetsService';
 import {
   requestGoogleAccessToken,
@@ -510,13 +511,15 @@ export default function GoogleSheetsSyncScreen() {
   };
 
   const [exportingLocal, setExportingLocal] = useState(false);
+  const [exportTimeframe, setExportTimeframe] = useState('All Time');
 
   const handleExportLocal = async (format) => {
     try {
       setExportingLocal(true);
-      const allReceipts = await getReceipts();
+      const rawReceipts = await getReceipts();
+      const allReceipts = filterReceiptsByDate(rawReceipts, exportTimeframe);
       if (!allReceipts || allReceipts.length === 0) {
-        Alert.alert('No Receipts', 'You have no scanned receipts to export.');
+        Alert.alert('No Matching Receipts', `You have no scanned receipts matching the "${exportTimeframe}" date filter.`);
         return;
       }
 
@@ -524,8 +527,10 @@ export default function GoogleSheetsSyncScreen() {
       let filename = '';
       let mimeType = '';
 
+      const tfTag = exportTimeframe === 'All Time' ? '' : `_${exportTimeframe.replace(/\s+/g, '')}`;
+
       if (format === 'csv') {
-        filename = `ReceiptGenius_Backup_${new Date().toISOString().slice(0, 10)}.csv`;
+        filename = `ReceiptGenius_Backup_${new Date().toISOString().slice(0, 10)}${tfTag}.csv`;
         mimeType = 'text/csv';
         const headers = ['ID', 'Date', 'Merchant', 'Category', 'Total (HKD)', 'Tax (HKD)', 'Original Currency', 'Payment Method', 'Notes'];
         const rows = allReceipts.map((r) => {
@@ -544,11 +549,12 @@ export default function GoogleSheetsSyncScreen() {
         });
         content = [headers.join(','), ...rows].join('\n');
       } else {
-        filename = `ReceiptGenius_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        filename = `ReceiptGenius_Backup_${new Date().toISOString().slice(0, 10)}${tfTag}.json`;
         mimeType = 'application/json';
         content = JSON.stringify({
           version: '1.0',
           exportedAt: new Date().toISOString(),
+          timeframeFilter: exportTimeframe,
           receiptsCount: allReceipts.length,
           receipts: allReceipts,
         }, null, 2);
@@ -588,7 +594,7 @@ export default function GoogleSheetsSyncScreen() {
       const newEntry = {
         id: String(Date.now()),
         type: format === 'csv' ? 'Device Backup (CSV)' : 'Device Backup (JSON)',
-        details: `${allReceipts.length} receipts exported to ${filename}`,
+        details: `${allReceipts.length} receipts (${exportTimeframe}) exported to ${filename}`,
         time: `Today\n${nowStr}`,
         status: 'success',
       };
@@ -783,6 +789,36 @@ export default function GoogleSheetsSyncScreen() {
                   <Text style={styles.sheetName}>Export Directly to Device</Text>
                 </View>
               </View>
+            </View>
+
+            <View style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
+              <Text style={{ fontSize: 12, color: colors.onSurfaceVariant, marginBottom: 8, fontWeight: '600' }}>
+                Select Export Timeframe:
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {DATE_TIMEFRAMES.map((tf) => {
+                  const selected = tf === exportTimeframe;
+                  return (
+                    <TouchableOpacity
+                      key={tf}
+                      style={[
+                        styles.timeframeChip,
+                        selected && styles.timeframeChipSelected,
+                      ]}
+                      onPress={() => setExportTimeframe(tf)}
+                    >
+                      <Text
+                        style={[
+                          styles.timeframeChipText,
+                          selected && styles.timeframeChipTextSelected,
+                        ]}
+                      >
+                        📅 {tf}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             </View>
 
             <View style={styles.backupButtonsRow}>
@@ -1320,6 +1356,27 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
     fontWeight: '600',
     fontSize: 13,
+  },
+  timeframeChip: {
+    backgroundColor: colors.surfaceHigh,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.surfaceHighest,
+  },
+  timeframeChipSelected: {
+    backgroundColor: 'rgba(0, 255, 163, 0.12)',
+    borderColor: colors.primary,
+  },
+  timeframeChipText: {
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    fontWeight: '600',
+  },
+  timeframeChipTextSelected: {
+    color: colors.primary,
+    fontWeight: '700',
   },
   section: {
     marginBottom: spacing.lg,
