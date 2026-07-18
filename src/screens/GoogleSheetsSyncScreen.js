@@ -13,7 +13,9 @@ import {
   Linking,
   Platform,
   ActivityIndicator,
+  Share,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { CONFIG } from '../config/config';
@@ -507,6 +509,108 @@ export default function GoogleSheetsSyncScreen() {
     Alert.alert('Webhook Connected', 'Your Google Spreadsheet connection is now active.');
   };
 
+  const [exportingLocal, setExportingLocal] = useState(false);
+
+  const handleExportLocal = async (format) => {
+    try {
+      setExportingLocal(true);
+      const allReceipts = await getReceipts();
+      if (!allReceipts || allReceipts.length === 0) {
+        Alert.alert('No Receipts', 'You have no scanned receipts to export.');
+        return;
+      }
+
+      let content = '';
+      let filename = '';
+      let mimeType = '';
+
+      if (format === 'csv') {
+        filename = `ReceiptGenius_Backup_${new Date().toISOString().slice(0, 10)}.csv`;
+        mimeType = 'text/csv';
+        const headers = ['ID', 'Date', 'Merchant', 'Category', 'Total (HKD)', 'Tax (HKD)', 'Original Currency', 'Payment Method', 'Notes'];
+        const rows = allReceipts.map((r) => {
+          const escape = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
+          return [
+            escape(r.id),
+            escape(r.date),
+            escape(r.merchantName),
+            escape(r.category),
+            escape(Number(r.totalAmount || 0).toFixed(2)),
+            escape(Number(r.tax || 0).toFixed(2)),
+            escape(r.originalCurrency || 'HKD'),
+            escape(r.paymentMethod),
+            escape(r.notes),
+          ].join(',');
+        });
+        content = [headers.join(','), ...rows].join('\n');
+      } else {
+        filename = `ReceiptGenius_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        mimeType = 'application/json';
+        content = JSON.stringify({
+          version: '1.0',
+          exportedAt: new Date().toISOString(),
+          receiptsCount: allReceipts.length,
+          receipts: allReceipts,
+        }, null, 2);
+      }
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        const fileUri = `${FileSystem.documentDirectory}${filename}`;
+        await FileSystem.writeAsStringAsync(fileUri, content, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        await Share.share({
+          url: fileUri,
+          title: `Export ${filename}`,
+          message: Platform.OS === 'android' ? `Here is your ReceiptGenius local backup (${filename})` : undefined,
+        });
+      }
+
+      const updatedReceipts = allReceipts.map((r) => ({
+        ...r,
+        syncedToSheets: true,
+        syncStatus: 'synced',
+      }));
+      await saveReceipts(updatedReceipts);
+
+      const now = new Date();
+      const nowStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const newEntry = {
+        id: String(Date.now()),
+        type: format === 'csv' ? 'Device Backup (CSV)' : 'Device Backup (JSON)',
+        details: `${allReceipts.length} receipts exported to ${filename}`,
+        time: `Today\n${nowStr}`,
+        status: 'success',
+      };
+      const nextHistory = [newEntry, ...exportHistory];
+      setExportHistory(nextHistory);
+      await saveExportHistory(nextHistory);
+      setLastSynced(`Today at ${nowStr}`);
+
+      Alert.alert(
+        'Backup Exported ✨',
+        `Successfully generated and exported ${filename} (${allReceipts.length} receipts) to your device!`
+      );
+    } catch (err) {
+      if (err.message && err.message.includes('User did not share')) {
+        return;
+      }
+      Alert.alert('Export Failed', err.message || 'Could not export backup file.');
+    } finally {
+      setExportingLocal(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -662,6 +766,56 @@ export default function GoogleSheetsSyncScreen() {
                 <Text style={styles.runExportButtonText}>
                   {syncing ? 'Exporting...' : '▶ Push Offline Only'}
                 </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* Local Device Backup & File Export */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Device Local Backup</Text>
+            <Text style={styles.sectionBadgeText}>Offline Export</Text>
+          </View>
+
+          <View style={styles.sheetCard}>
+            <View style={styles.sheetCardTop}>
+              <View style={styles.sheetCardTitleRow}>
+                <Text style={styles.sheetGreenIcon}>💾</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sheetName}>Export Directly to Device</Text>
+                  <Text style={[styles.sheetCardSubtitle, { marginTop: 2 }]}>
+                    Save a local backup file directly to your device storage or share via email and apps without needing a cloud connection.
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.backupButtonsRow}>
+              <TouchableOpacity
+                style={[styles.backupExportButton, styles.backupCsvButton]}
+                onPress={() => handleExportLocal('csv')}
+                disabled={exportingLocal || syncing}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.backupExportIconText}>📑</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.backupButtonTitle}>Export CSV Table</Text>
+                  <Text style={styles.backupButtonSubtitle}>For Excel, Numbers & Sheets</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.backupExportButton, styles.backupJsonButton]}
+                onPress={() => handleExportLocal('json')}
+                disabled={exportingLocal || syncing}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.backupExportIconText}>📦</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.backupButtonTitle}>Export JSON Backup</Text>
+                  <Text style={styles.backupButtonSubtitle}>Full ledger dataset & metadata</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -1485,5 +1639,40 @@ const styles = StyleSheet.create({
   modalSaveText: {
     color: '#003824',
     fontWeight: '700',
+  },
+  backupButtonsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  backupExportButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+  },
+  backupCsvButton: {
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+  },
+  backupJsonButton: {
+    backgroundColor: 'rgba(96, 165, 250, 0.12)',
+    borderColor: 'rgba(96, 165, 250, 0.3)',
+  },
+  backupExportIconText: {
+    fontSize: 24,
+  },
+  backupButtonTitle: {
+    color: colors.onSurface,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  backupButtonSubtitle: {
+    color: colors.onSurfaceVariant,
+    fontSize: 11,
   },
 });
