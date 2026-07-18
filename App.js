@@ -13,7 +13,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from './src/theme/theme';
+import { colors, borderRadius } from './src/theme/theme';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { CONFIG } from './src/config/config';
 
@@ -35,7 +35,6 @@ function HybridWebShell({ targetUrl, onFallbackToOffline }) {
       <View style={styles.webviewContainer}>
         {hasError ? (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorIcon}>⚡</Text>
             <Text style={styles.errorTitle}>Offline or Unreachable</Text>
             <Text style={styles.errorSubtitle}>
               Could not connect to the live Vercel web shell ({targetUrl}). You can switch to local offline mode to view and record receipts using device storage.
@@ -49,7 +48,7 @@ function HybridWebShell({ targetUrl, onFallbackToOffline }) {
                   setKey((prev) => prev + 1);
                 }}
               >
-                <Text style={styles.retryButtonText}>🔄 Retry Online</Text>
+                <Text style={styles.retryButtonText}>Retry Online</Text>
               </TouchableOpacity>
 
               {onFallbackToOffline && (
@@ -57,7 +56,7 @@ function HybridWebShell({ targetUrl, onFallbackToOffline }) {
                   style={styles.fallbackButton}
                   onPress={onFallbackToOffline}
                 >
-                  <Text style={styles.fallbackButtonText}>⚡ Use Offline Mode</Text>
+                  <Text style={styles.fallbackButtonText}>Use Offline Mode</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -125,7 +124,7 @@ function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
       {isOfflineFallback && (
         <View style={styles.offlineBanner}>
           <Text style={styles.offlineBannerText}>
-            ⚡ Offline Mode — Running locally from device memory
+            Offline Mode — Running locally from device memory
           </Text>
           {onRetryOnline && (
             <TouchableOpacity style={styles.reconnectButton} onPress={onRetryOnline}>
@@ -307,7 +306,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 999,
+    borderRadius: borderRadius.md,
   },
   retryButtonText: {
     color: '#003824',
@@ -320,7 +319,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 999,
+    borderRadius: borderRadius.md,
   },
   fallbackButtonText: {
     color: colors.primary,
@@ -347,7 +346,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 999,
+    borderRadius: borderRadius.md,
     marginLeft: 10,
   },
   reconnectButtonText: {

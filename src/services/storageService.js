@@ -117,17 +117,20 @@ export async function getSettings() {
       return {
         geminiApiKey: CONFIG.GEMINI_API_KEY || '',
         webhookUrl: CONFIG.GOOGLE_SHEETS_WEBHOOK_URL || '',
+        autoSync: true,
       };
     }
     const parsed = JSON.parse(data);
     return {
       geminiApiKey: (parsed && parsed.geminiApiKey) || CONFIG.GEMINI_API_KEY || '',
       webhookUrl: (parsed && parsed.webhookUrl) || CONFIG.GOOGLE_SHEETS_WEBHOOK_URL || '',
+      autoSync: parsed && parsed.autoSync !== undefined ? parsed.autoSync : true,
     };
   } catch (error) {
     return {
       geminiApiKey: CONFIG.GEMINI_API_KEY || '',
       webhookUrl: CONFIG.GOOGLE_SHEETS_WEBHOOK_URL || '',
+      autoSync: true,
     };
   }
 }

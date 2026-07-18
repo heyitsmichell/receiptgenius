@@ -139,7 +139,7 @@ export default function DashboardScreen({ navigation }) {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <TouchableOpacity
-              style={styles.themeToggleBtn}
+              style={[styles.themeToggleBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
               onPress={toggleTheme}
             >
               <Ionicons
@@ -149,18 +149,18 @@ export default function DashboardScreen({ navigation }) {
               />
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.scanHeaderButton}
+              style={[styles.scanHeaderButton, { backgroundColor: colors.primary }]}
               onPress={() => navigation.navigate('Scan')}
             >
-              <Text style={styles.scanHeaderButtonText}>+ Scan</Text>
+              <Text style={[styles.scanHeaderButtonText, { color: colors.onPrimary }]}>+ Scan</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Hero KPI Summary Card */}
-        <View style={styles.heroCard}>
+        <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
           <View style={styles.heroHeaderRow}>
-            <Text style={styles.heroLabel}>TOTAL TRACKED SPENDING</Text>
+            <Text style={[styles.heroLabel, { color: colors.onSurfaceVariant }]}>TOTAL TRACKED SPENDING</Text>
             {/* Currency Selector Dropdown Button */}
             <TouchableOpacity
               style={styles.currencyDropdownButton}
@@ -173,30 +173,30 @@ export default function DashboardScreen({ navigation }) {
           </View>
 
           <View style={styles.heroAmountRow}>
-            <Text style={styles.heroAmount}>
+            <Text style={[styles.heroAmount, { color: colors.onSurface }]}>
               {CURRENCY_SYMBOLS[displayCurrency] || `${displayCurrency} `}
               {convertedTotal.toFixed(2)}
             </Text>
             {displayCurrency !== 'HKD' && (
-              <Text style={styles.heroSubAmount}>
+              <Text style={[styles.heroSubAmount, { color: colors.onSurfaceVariant }]}>
                 (≈ HKD {totalSpendHKD.toFixed(2)})
               </Text>
             )}
           </View>
 
-          <View style={styles.heroStatsRow}>
+          <View style={[styles.heroStatsRow, { borderTopColor: colors.surfaceHigh }]}>
             <View style={styles.heroStatItem}>
-              <Text style={styles.heroStatValue}>{receipts.length}</Text>
-              <Text style={styles.heroStatLabel}>Receipts Scanned</Text>
+              <Text style={[styles.heroStatValue, { color: colors.onSurface }]}>{receipts.length}</Text>
+              <Text style={[styles.heroStatLabel, { color: colors.onSurfaceVariant }]}>Receipts Scanned</Text>
             </View>
-            <View style={styles.heroStatDivider} />
+            <View style={[styles.heroStatDivider, { backgroundColor: colors.surfaceHigh }]} />
             <View style={styles.heroStatItem}>
               <Text style={[styles.heroStatValue, { color: colors.primary }]}>
                 {syncedCount}
               </Text>
-              <Text style={styles.heroStatLabel}>Synced to Sheets</Text>
+              <Text style={[styles.heroStatLabel, { color: colors.onSurfaceVariant }]}>Synced to Sheets</Text>
             </View>
-            <View style={styles.heroStatDivider} />
+            <View style={[styles.heroStatDivider, { backgroundColor: colors.surfaceHigh }]} />
             <View style={styles.heroStatItem}>
               <Text
                 style={[
@@ -206,7 +206,7 @@ export default function DashboardScreen({ navigation }) {
               >
                 {pendingCount}
               </Text>
-              <Text style={styles.heroStatLabel}>Pending Sync</Text>
+              <Text style={[styles.heroStatLabel, { color: colors.onSurfaceVariant }]}>Pending Sync</Text>
             </View>
           </View>
         </View>
@@ -219,7 +219,7 @@ export default function DashboardScreen({ navigation }) {
 
         {/* Recent Receipts Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Receipts</Text>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Recent Receipts</Text>
           <TouchableOpacity onPress={() => navigation.navigate('History')}>
             <Text style={styles.viewAllText}>View All ({receipts.length}) →</Text>
           </TouchableOpacity>
@@ -253,11 +253,11 @@ export default function DashboardScreen({ navigation }) {
           activeOpacity={1}
           onPress={() => setCurrencyModalVisible(false)}
         >
-          <View style={styles.currencyModalCard} onStartShouldSetResponder={() => true}>
+          <View style={[styles.currencyModalCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]} onStartShouldSetResponder={() => true}>
             <View style={styles.currencyModalHeader}>
               <View>
-                <Text style={styles.currencyModalTitle}>Display Currency</Text>
-                <Text style={styles.currencyModalSubtitle}>
+                <Text style={[styles.currencyModalTitle, { color: colors.onSurface }]}>Display Currency</Text>
+                <Text style={[styles.currencyModalSubtitle, { color: colors.onSurfaceVariant }]}>
                   Choose how spending is displayed across your dashboard
                 </Text>
               </View>
@@ -282,6 +282,7 @@ export default function DashboardScreen({ navigation }) {
                     key={curr}
                     style={[
                       styles.currencyOptionItem,
+                      { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest },
                       isSelected && styles.currencyOptionItemSelected,
                     ]}
                     onPress={() => {
@@ -310,6 +311,7 @@ export default function DashboardScreen({ navigation }) {
                         <Text
                           style={[
                             styles.currencyOptionCode,
+                            { color: colors.onSurface },
                             isSelected && styles.currencyOptionCodeSelected,
                           ]}
                         >
@@ -377,7 +379,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceHigh,
     width: 38,
     height: 38,
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
     justifyContent: 'center',
@@ -387,7 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.md,
   },
   scanHeaderButtonText: {
     color: colors.onPrimary,
@@ -421,7 +423,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.md,
     backgroundColor: colors.primary,
     gap: 6,
   },
@@ -553,7 +555,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     marginBottom: 8,
     backgroundColor: colors.surfaceHigh,
     borderWidth: 1,

@@ -1,25 +1,27 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function CategoryBreakdownBar({ categoryBreakdown, totalSpend }) {
+  const { colors } = useTheme();
   const categories = Object.keys(categoryBreakdown || {});
 
   if (categories.length === 0 || !totalSpend) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.sectionTitle}>Spending by Category</Text>
-        <Text style={styles.emptyText}>No spending recorded yet</Text>
+      <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
+        <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Spending by Category</Text>
+        <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>No spending recorded yet</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Spending by Category</Text>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
+      <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Spending by Category</Text>
 
       {/* Multi-color horizontal stacked progress bar */}
-      <View style={styles.stackedBarContainer}>
+      <View style={[styles.stackedBarContainer, { backgroundColor: colors.surfaceHigh }]}>
         {categories.map((category, index) => {
           const amount = categoryBreakdown[category];
           const widthPercent = Math.max(2, (amount / totalSpend) * 100);
@@ -55,11 +57,11 @@ export default function CategoryBreakdownBar({ categoryBreakdown, totalSpend }) 
             <View key={category} style={styles.legendRow}>
               <View style={styles.legendLeft}>
                 <View style={[styles.colorDot, { backgroundColor: color }]} />
-                <Text style={styles.categoryName}>{category}</Text>
+                <Text style={[styles.categoryName, { color: colors.onSurface }]}>{category}</Text>
               </View>
               <View style={styles.legendRight}>
-                <Text style={styles.amountText}>HKD {amount.toFixed(2)}</Text>
-                <Text style={styles.percentText}>{percent}%</Text>
+                <Text style={[styles.amountText, { color: colors.onSurface }]}>HKD {amount.toFixed(2)}</Text>
+                <Text style={[styles.percentText, { color: colors.onSurfaceVariant }]}>{percent}%</Text>
               </View>
             </View>
           );

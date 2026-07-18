@@ -16,6 +16,7 @@ import {
   Share,
 } from 'react-native';
 import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -44,7 +45,7 @@ import {
 } from '../services/googleOAuthSheetsService';
 
 export default function GoogleSheetsSyncScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [autoSync, setAutoSync] = useState(true);
   const [lastSynced, setLastSynced] = useState('Checking...');
   const [syncing, setSyncing] = useState(false);
@@ -91,9 +92,24 @@ export default function GoogleSheetsSyncScreen() {
         if (storedSession && storedSession.signedIn) {
           setGoogleUser(storedSession);
         }
+        const settings = await getSettings();
+        if (settings) {
+          if (settings.autoSync !== undefined) {
+            setAutoSync(settings.autoSync);
+          }
+          if (settings.webhookUrl !== undefined) {
+            setWebhookUrl(settings.webhookUrl);
+          }
+        }
       })();
     }, [])
   );
+
+  const handleToggleAutoSync = async (value) => {
+    setAutoSync(value);
+    const currentSettings = await getSettings();
+    await saveSettings({ ...currentSettings, autoSync: value });
+  };
 
   const handleGoogleLoginOnly = () => {
     // 1. Invoke requestGoogleAccessToken synchronously without prior await or state delays
@@ -494,7 +510,7 @@ export default function GoogleSheetsSyncScreen() {
       await saveExportHistory(nextHistory);
 
       Alert.alert(
-        'Two-Way Sync Complete 🔄',
+        'Two-Way Sync Complete',
         `Successfully retrieved ${importedCount} new receipt(s) from your Google Sheet and pushed ${exportedCount} local offline receipt(s) to "${sheetName}"!`
       );
     } catch (err) {
@@ -594,11 +610,15 @@ export default function GoogleSheetsSyncScreen() {
         await FileSystem.writeAsStringAsync(fileUri, content, {
           encoding: FileSystem.EncodingType.UTF8,
         });
-        await Share.share({
-          url: fileUri,
-          title: `Export ${filename}`,
-          message: Platform.OS === 'android' ? `Here is your ReceiptGenius local backup (${filename})` : undefined,
-        });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: mimeType,
+            dialogTitle: `Export ${filename}`,
+            UTI: format === 'csv' ? 'public.comma-separated-values-text' : 'public.json',
+          });
+        } else {
+          Alert.alert('Backup Saved ✨', `Saved backup file directly to device storage:\n${fileUri}`);
+        }
       }
 
       const updatedReceipts = allReceipts.map((r) => ({
@@ -654,14 +674,11 @@ export default function GoogleSheetsSyncScreen() {
         </View>
 
         {/* REAL ONE-CLICK GOOGLE OAUTH SIGN IN CARD */}
-        <View style={styles.googleAccountCard}>
+        <View style={[styles.googleAccountCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
           <View style={styles.googleCardHeader}>
-            <View style={styles.googleLogoCircle}>
-              <Text style={styles.googleLogoG}>G</Text>
-            </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.googleCardTitle}>
-                {googleUser.signedIn ? 'Google Account Connected' : 'Connect with Google'}
+              <Text style={[styles.googleCardTitle, { color: colors.onSurface }]}>
+                {googleUser.signedIn ? 'Cloud Save Connected' : 'Cloud Save'}
               </Text>
               {googleUser.signedIn && (
                 <Text style={styles.googleCardSubtitle}>
@@ -672,22 +689,22 @@ export default function GoogleSheetsSyncScreen() {
           </View>
 
           {googleUser.signedIn ? (
-            <View style={styles.connectedBox}>
+            <View style={[styles.connectedBox, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}>
               {googleUser.spreadsheetId ? (
                 <>
                   <View style={styles.connectedRow}>
                     <Text style={styles.connectedSheetIcon}>📗</Text>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.connectedSheetTitle}>{googleUser.spreadsheetTitle}</Text>
-                      <Text style={styles.connectedSheetStatus}>
+                      <Text style={[styles.connectedSheetTitle, { color: colors.onSurface }]}>{googleUser.spreadsheetTitle}</Text>
+                      <Text style={[styles.connectedSheetStatus, { color: colors.onSurfaceVariant }]}>
                         Active • Live REST API v4 Syncing
                       </Text>
                     </View>
                     <TouchableOpacity
-                      style={styles.openSheetButton}
+                      style={[styles.openSheetButton, { backgroundColor: colors.surfaceHighest }]}
                       onPress={() => Linking.openURL(googleUser.spreadsheetUrl)}
                     >
-                      <Text style={styles.openSheetButtonText}>Open Sheet ↗</Text>
+                      <Text style={[styles.openSheetButtonText, { color: colors.onSurface }]}>Open Sheet ↗</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -739,54 +756,53 @@ export default function GoogleSheetsSyncScreen() {
             </View>
           ) : (
             <TouchableOpacity
-              style={styles.googleSignInButton}
+              style={[styles.googleSignInButton, { backgroundColor: colors.surfaceHigh, borderWidth: 1.5, borderColor: colors.outline }]}
               onPress={handleGoogleLoginOnly}
             >
               <Text style={styles.googleSignInIcon}>G</Text>
-              <Text style={styles.googleSignInText}>Sign in with Google Account</Text>
+              <Text style={[styles.googleSignInText, { color: colors.onSurface }]}>Sign in with Google Account</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Integration Settings Card */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderLeft}>
-              <Text style={styles.cardIconText}>🔄</Text>
               <View>
-                <Text style={styles.cardTitle}>Auto-Sync Receipts</Text>
+                <Text style={[styles.cardTitle, { color: colors.onSurface }]}>Auto-Sync Receipts</Text>
               </View>
             </View>
 
             <Switch
               value={autoSync}
-              onValueChange={setAutoSync}
+              onValueChange={handleToggleAutoSync}
               trackColor={{ false: colors.surfaceHighest, true: colors.primary }}
               thumbColor={autoSync ? '#ffffff' : colors.onSurfaceVariant}
             />
           </View>
 
           <View style={styles.cardFooter}>
-            <Text style={styles.lastSyncedText}>🕒 Last synced: {lastSynced}</Text>
+            <Text style={[styles.lastSyncedText, { color: colors.onSurfaceVariant }]}>Last synced: {lastSynced}</Text>
 
             <View style={styles.syncButtonsRow}>
               <TouchableOpacity
-                style={styles.twoWaySyncButton}
+                style={[styles.twoWaySyncButton, { backgroundColor: colors.primary }]}
                 onPress={handleTwoWaySync}
                 disabled={syncing}
               >
                 <Text style={styles.twoWaySyncButtonText}>
-                  {syncing ? 'Syncing...' : '🔄 Two-Way Sync (Pull & Push)'}
+                  {syncing ? 'Syncing...' : 'Two-Way Sync'}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.runExportButton}
+                style={[styles.runExportButton, { backgroundColor: colors.surfaceHighest, borderColor: colors.outlineVariant }]}
                 onPress={handleRunManualExport}
                 disabled={syncing}
               >
-                <Text style={styles.runExportButtonText}>
-                  {syncing ? 'Exporting...' : '▶ Push Offline Only'}
+                <Text style={[styles.runExportButtonText, { color: colors.onSurface }]}>
+                  {syncing ? 'Exporting...' : 'Push Offline Only'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -796,16 +812,15 @@ export default function GoogleSheetsSyncScreen() {
         {/* Local Device Backup & File Export */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Device Local Backup</Text>
-            <Text style={styles.sectionBadgeText}>Offline Export</Text>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Device Local Backup</Text>
+            <Text style={[styles.sectionBadgeText, { color: colors.onSurfaceVariant, backgroundColor: colors.surfaceHighest }]}>Offline Export</Text>
           </View>
 
-          <View style={styles.sheetCard}>
+          <View style={[styles.sheetCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
             <View style={styles.sheetCardTop}>
               <View style={styles.sheetCardTitleRow}>
-                <Text style={styles.sheetGreenIcon}>💾</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.sheetName}>Export Directly to Device</Text>
+                  <Text style={[styles.sheetName, { color: colors.onSurface }]}>Export Directly to Device</Text>
                 </View>
               </View>
             </View>
@@ -822,14 +837,16 @@ export default function GoogleSheetsSyncScreen() {
                       key={tf}
                       style={[
                         styles.timeframeChip,
-                        selected && styles.timeframeChipSelected,
+                        { backgroundColor: colors.surface, borderColor: colors.surfaceHighest },
+                        selected && { backgroundColor: isDark ? 'rgba(0, 255, 163, 0.15)' : 'rgba(16, 185, 129, 0.15)', borderColor: colors.primary },
                       ]}
                       onPress={() => setExportTimeframe(tf)}
                     >
                       <Text
                         style={[
                           styles.timeframeChipText,
-                          selected && styles.timeframeChipTextSelected,
+                          { color: colors.onSurfaceVariant },
+                          selected && { color: colors.primary, fontWeight: '700' },
                         ]}
                       >
                         {tf === 'Custom Range' ? 'Custom Range' : tf}
@@ -842,43 +859,43 @@ export default function GoogleSheetsSyncScreen() {
               {exportTimeframe === 'Custom Range' && (
                 <View style={[styles.customDateRow, { marginTop: 10, paddingHorizontal: 0 }]}>
                   <View style={styles.customDateBox}>
-                    <Text style={styles.customDateLabel}>FROM (DD/MM/YY)</Text>
+                    <Text style={[styles.customDateLabel, { color: colors.onSurfaceVariant }]}>FROM (DD/MM/YY)</Text>
                     <TouchableOpacity
-                      style={styles.datePickerBtn}
+                      style={[styles.datePickerBtn, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}
                       onPress={() => {
                         setCalendarTarget('start');
                         setCalendarVisible(true);
                       }}
                     >
-                      <Text style={styles.datePickerBtnText}>
+                      <Text style={[styles.datePickerBtnText, { color: colors.onSurface }]}>
                         {customStart || 'Select Start Date'}
                       </Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={styles.customDateToText}>to</Text>
+                  <Text style={[styles.customDateToText, { color: colors.onSurfaceVariant }]}>to</Text>
                   <View style={styles.customDateBox}>
-                    <Text style={styles.customDateLabel}>TO (DD/MM/YY)</Text>
+                    <Text style={[styles.customDateLabel, { color: colors.onSurfaceVariant }]}>TO (DD/MM/YY)</Text>
                     <TouchableOpacity
-                      style={styles.datePickerBtn}
+                      style={[styles.datePickerBtn, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}
                       onPress={() => {
                         setCalendarTarget('end');
                         setCalendarVisible(true);
                       }}
                     >
-                      <Text style={styles.datePickerBtnText}>
+                      <Text style={[styles.datePickerBtnText, { color: colors.onSurface }]}>
                         {customEnd || 'Select End Date'}
                       </Text>
                     </TouchableOpacity>
                   </View>
                   {(customStart !== '' || customEnd !== '') && (
                     <TouchableOpacity
-                      style={styles.customDateClearBtn}
+                      style={[styles.customDateClearBtn, { backgroundColor: isDark ? 'rgba(255, 100, 100, 0.15)' : 'rgba(239, 68, 68, 0.15)', borderColor: colors.error }]}
                       onPress={() => {
                         setCustomStart('');
                         setCustomEnd('');
                       }}
                     >
-                      <Text style={styles.customDateClearText}>✕</Text>
+                      <Text style={[styles.customDateClearText, { color: colors.error }]}>✕</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -887,27 +904,35 @@ export default function GoogleSheetsSyncScreen() {
 
             <View style={styles.backupButtonsRow}>
               <TouchableOpacity
-                style={[styles.backupExportButton, styles.backupCsvButton]}
+                style={[
+                  styles.backupExportButton,
+                  {
+                    backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                    borderColor: isDark ? 'rgba(52, 211, 153, 0.4)' : 'rgba(16, 185, 129, 0.5)',
+                    justifyContent: 'center',
+                  }
+                ]}
                 onPress={() => handleExportLocal('csv')}
                 disabled={exportingLocal || syncing}
                 activeOpacity={0.8}
               >
-                <Text style={styles.backupExportIconText}>📑</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.backupButtonTitle}>Export CSV Table</Text>
-                </View>
+                <Text style={[styles.backupButtonTitle, { color: colors.onSurface, textAlign: 'center', marginBottom: 0 }]}>Export CSV Table</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.backupExportButton, styles.backupJsonButton]}
+                style={[
+                  styles.backupExportButton,
+                  {
+                    backgroundColor: isDark ? 'rgba(96, 165, 250, 0.15)' : 'rgba(37, 99, 235, 0.12)',
+                    borderColor: isDark ? 'rgba(96, 165, 250, 0.4)' : 'rgba(37, 99, 235, 0.4)',
+                    justifyContent: 'center',
+                  }
+                ]}
                 onPress={() => handleExportLocal('json')}
                 disabled={exportingLocal || syncing}
                 activeOpacity={0.8}
               >
-                <Text style={styles.backupExportIconText}>📦</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.backupButtonTitle}>Export JSON Backup</Text>
-                </View>
+                <Text style={[styles.backupButtonTitle, { color: colors.onSurface, textAlign: 'center', marginBottom: 0 }]}>Export JSON Backup</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -916,15 +941,14 @@ export default function GoogleSheetsSyncScreen() {
         {/* Advanced Webhook Configuration Accordion */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Advanced Webhook Mode</Text>
-            <Text style={styles.sectionBadgeText}>Optional</Text>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Advanced Webhook Mode</Text>
+            <Text style={[styles.sectionBadgeText, { color: colors.onSurfaceVariant, backgroundColor: colors.surfaceHighest }]}>Optional</Text>
           </View>
 
-          <View style={styles.sheetCard}>
+          <View style={[styles.sheetCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
             <View style={styles.sheetCardTop}>
               <View style={styles.sheetCardTitleRow}>
-                <Text style={styles.sheetGreenIcon}>⚡</Text>
-                <Text style={styles.sheetName}>Google Apps Script Webhook</Text>
+                <Text style={[styles.sheetName, { color: colors.onSurface }]}>Google Apps Script Webhook</Text>
               </View>
               <View style={styles.activeBadge}>
                 <Text style={styles.activeBadgeText}>
@@ -933,7 +957,7 @@ export default function GoogleSheetsSyncScreen() {
               </View>
             </View>
 
-            <Text style={styles.sheetIdText} numberOfLines={1}>
+            <Text style={[styles.sheetIdText, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
               {webhookUrl || 'No custom webhook script configured'}
             </Text>
             <TouchableOpacity
@@ -943,7 +967,7 @@ export default function GoogleSheetsSyncScreen() {
                 setWebhookModalVisible(true);
               }}
             >
-              <Text style={styles.connectNewButtonText}>
+              <Text style={[styles.connectNewButtonText, { color: colors.primary }]}>
                 {webhookUrl ? '⚙️ Edit Webhook URL' : '+ Paste Webhook URL (Advanced)'}
               </Text>
             </TouchableOpacity>
@@ -952,11 +976,11 @@ export default function GoogleSheetsSyncScreen() {
 
         {/* Export History Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Export History</Text>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Export History</Text>
 
-          <View style={styles.historyCard}>
+          <View style={[styles.historyCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
             {exportHistory.map((item) => (
-              <View key={item.id} style={styles.historyRow}>
+              <View key={item.id} style={[styles.historyRow, { borderBottomColor: colors.surfaceHighest }]}>
                 <View style={styles.historyLeft}>
                   <View
                     style={[
@@ -964,17 +988,21 @@ export default function GoogleSheetsSyncScreen() {
                       item.status === 'success' ? styles.successCircle : styles.errorCircle,
                     ]}
                   >
-                    <Text style={styles.statusIcon}>
+                    <Text style={[styles.statusIcon, { color: colors.primary }]}>
                       {item.status === 'success' ? '✓' : '✕'}
                     </Text>
                   </View>
-                  <View>
-                    <Text style={styles.historyTitle}>{item.type}</Text>
-                    <Text style={styles.historyDetails}>{item.details}</Text>
+                  <View style={{ flex: 1, overflow: 'hidden' }}>
+                    <Text style={[styles.historyTitle, { color: colors.onSurface }]}>{item.type}</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 2 }}>
+                      <Text selectable={true} style={[styles.historyDetails, { color: colors.onSurfaceVariant, marginTop: 0 }]}>
+                        {item.details}
+                      </Text>
+                    </ScrollView>
                   </View>
                 </View>
 
-                <Text style={styles.historyTime}>{item.time}</Text>
+                <Text style={[styles.historyTime, { color: colors.onSurfaceVariant, marginLeft: spacing.sm, flexShrink: 0 }]}>{item.time}</Text>
               </View>
             ))}
           </View>
@@ -983,30 +1011,31 @@ export default function GoogleSheetsSyncScreen() {
         {/* GOOGLE SIGN-IN & SPREADSHEET SETUP MODAL */}
         <Modal visible={googleModalVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalBox, { maxHeight: '85%' }]}>
+            <View style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest, maxHeight: '85%' }]}>
               <View style={styles.googleModalTop}>
                 <View style={styles.googleLogoCircleLarge}>
                   <Text style={styles.googleLogoGLarge}>G</Text>
                 </View>
-                <Text style={styles.modalTitle}>Choose Spreadsheet</Text>
-                <Text style={styles.modalSubtitle}>
+                <Text style={[styles.modalTitle, { color: colors.onSurface }]}>Choose Spreadsheet</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.onSurfaceVariant }]}>
                   Choose whether to link an existing spreadsheet from your Google Drive or create a brand new one.
                 </Text>
               </View>
 
               {/* Mode Selector Tabs */}
-              <View style={styles.modalTabsRow}>
+              <View style={[styles.modalTabsRow, { backgroundColor: colors.surfaceHigh }]}>
                 <TouchableOpacity
                   style={[
                     styles.modalTab,
-                    googleModalMode === 'link' && styles.modalTabActive,
+                    googleModalMode === 'link' && [styles.modalTabActive, { backgroundColor: colors.surfaceHighest }],
                   ]}
                   onPress={() => setGoogleModalMode('link')}
                 >
                   <Text
                     style={[
                       styles.modalTabText,
-                      googleModalMode === 'link' && styles.modalTabTextActive,
+                      { color: colors.onSurfaceVariant },
+                      googleModalMode === 'link' && { color: colors.primary, fontWeight: '700' },
                     ]}
                   >
                     🔗 Link Existing Sheet
@@ -1016,14 +1045,15 @@ export default function GoogleSheetsSyncScreen() {
                 <TouchableOpacity
                   style={[
                     styles.modalTab,
-                    googleModalMode === 'create' && styles.modalTabActive,
+                    googleModalMode === 'create' && [styles.modalTabActive, { backgroundColor: colors.surfaceHighest }],
                   ]}
                   onPress={() => setGoogleModalMode('create')}
                 >
                   <Text
                     style={[
                       styles.modalTabText,
-                      googleModalMode === 'create' && styles.modalTabTextActive,
+                      { color: colors.onSurfaceVariant },
+                      googleModalMode === 'create' && { color: colors.primary, fontWeight: '700' },
                     ]}
                   >
                     ✨ Create New Sheet
@@ -1042,10 +1072,10 @@ export default function GoogleSheetsSyncScreen() {
                         <TouchableOpacity
                           onPress={() => handleBrowseDriveSheets()}
                           disabled={loadingDriveSheets}
-                          style={{ paddingHorizontal: 8, paddingVertical: 4, backgroundColor: colors.surfaceHighest, borderRadius: 4 }}
+                          style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.surfaceHighest, borderRadius: borderRadius.md }}
                         >
                           <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '700' }}>
-                            {loadingDriveSheets ? 'Loading...' : '🔄 Refresh List'}
+                            {loadingDriveSheets ? 'Loading...' : 'Refresh List'}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -1064,13 +1094,14 @@ export default function GoogleSheetsSyncScreen() {
                               key={sheet.id}
                               style={[
                                 styles.driveSheetItem,
+                                { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest },
                                 inputSheetIdOrUrl === sheet.id && styles.driveSheetItemActive,
                               ]}
                               onPress={() => handleSelectDriveSheet(sheet)}
                             >
                               <Text style={styles.driveSheetIcon}>📗</Text>
                               <View style={{ flex: 1 }}>
-                                <Text style={styles.driveSheetName} numberOfLines={1}>
+                                <Text style={[styles.driveSheetName, { color: colors.onSurface }]} numberOfLines={1}>
                                   {sheet.name}
                                 </Text>
                                 <Text style={styles.driveSheetId} numberOfLines={1}>
@@ -1150,14 +1181,14 @@ export default function GoogleSheetsSyncScreen() {
         {/* WEBHOOK CONFIGURATION MODAL */}
         <Modal visible={webhookModalVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
-            <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>Google Sheets Webhook URL</Text>
-              <Text style={styles.modalSubtitle}>
+            <View style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
+              <Text style={[styles.modalTitle, { color: colors.onSurface }]}>Google Sheets Webhook URL</Text>
+              <Text style={[styles.modalSubtitle, { color: colors.onSurfaceVariant }]}>
                 Paste your deployed Google Apps Script Web App URL below:
               </Text>
 
               <TextInput
-                style={styles.modalInput}
+                style={[styles.modalInput, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
                 placeholder="https://script.google.com/macros/s/.../exec"
                 placeholderTextColor={colors.onSurfaceVariant}
                 value={tempUrl}
@@ -1294,7 +1325,7 @@ const styles = StyleSheet.create({
   },
   connectedBox: {
     backgroundColor: colors.surfaceLow,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
@@ -1320,9 +1351,9 @@ const styles = StyleSheet.create({
   },
   openSheetButton: {
     backgroundColor: colors.surfaceHighest,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: borderRadius.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: borderRadius.md,
   },
   openSheetButtonText: {
     color: colors.onSurface,
@@ -1407,38 +1438,42 @@ const styles = StyleSheet.create({
   },
   twoWaySyncButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 12,
     borderRadius: borderRadius.md,
     flex: 1,
-    minWidth: 190,
+    minWidth: 140,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   twoWaySyncButtonText: {
     color: '#003824',
     fontWeight: '700',
     fontSize: 13,
+    textAlign: 'center',
   },
   runExportButton: {
     backgroundColor: colors.surfaceHighest,
     borderWidth: 1,
     borderColor: colors.outlineVariant,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 12,
     borderRadius: borderRadius.md,
     flex: 1,
-    minWidth: 150,
+    minWidth: 140,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   runExportButtonText: {
     color: colors.onSurface,
     fontWeight: '600',
     fontSize: 13,
+    textAlign: 'center',
   },
   timeframeChip: {
     backgroundColor: colors.surfaceHigh,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
@@ -1474,8 +1509,8 @@ const styles = StyleSheet.create({
   },
   datePickerBtn: {
     backgroundColor: colors.surfaceHigh,
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: 10,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
@@ -1495,9 +1530,9 @@ const styles = StyleSheet.create({
   customDateClearBtn: {
     marginTop: 14,
     backgroundColor: 'rgba(255, 100, 100, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: borderRadius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: 'rgba(255, 100, 100, 0.3)',
   },
@@ -1517,21 +1552,23 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.onSurface,
-    marginBottom: spacing.md,
+    marginBottom: 0,
   },
   sectionBadgeText: {
     fontSize: 12,
+    fontWeight: '600',
     color: colors.onSurfaceVariant,
     backgroundColor: colors.surfaceHighest,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: borderRadius.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
   },
   sheetCard: {
     backgroundColor: colors.surfaceLow,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
@@ -1829,8 +1866,9 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: borderRadius.lg,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     gap: spacing.sm,
   },

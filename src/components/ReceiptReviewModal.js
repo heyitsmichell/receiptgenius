@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import { getLiveHKDExchangeRates } from '../services/currencyService';
 
 const CATEGORIES = [
@@ -41,6 +42,7 @@ export default function ReceiptReviewModal({
   onConfirm,
   onCancel,
 }) {
+  const { colors } = useTheme();
   const [merchant, setMerchant] = useState('');
   const [date, setDate] = useState('');
   const [category, setCategory] = useState('Food & Dining');
@@ -118,9 +120,9 @@ export default function ReceiptReviewModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.modalBackdrop}
       >
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
           <ScrollView contentContainerStyle={styles.scrollContainer}>
-            <Text style={styles.title}>
+            <Text style={[styles.title, { color: colors.onSurface }]}>
               {errorMessage ? 'Manual Input Mode' : 'Verify AI Receipt Data'}
             </Text>
 
@@ -130,25 +132,25 @@ export default function ReceiptReviewModal({
               </View>
             ) : null}
 
-            <Text style={styles.label}>MERCHANT / STORE</Text>
+            <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>MERCHANT / STORE</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
               placeholder="e.g. Whole Foods"
               placeholderTextColor={colors.onSurfaceVariant}
               value={merchant}
               onChangeText={setMerchant}
             />
 
-            <Text style={styles.label}>DATE (YYYY-MM-DD)</Text>
+            <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>DATE (YYYY-MM-DD)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
               placeholder="2026-07-14"
               placeholderTextColor={colors.onSurfaceVariant}
               value={date}
               onChangeText={setDate}
             />
 
-            <Text style={styles.label}>CATEGORY</Text>
+            <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>CATEGORY</Text>
             <View style={styles.categoryGrid}>
               {CATEGORIES.map((cat) => {
                 const selected = cat === category;
@@ -157,6 +159,7 @@ export default function ReceiptReviewModal({
                     key={cat}
                     style={[
                       styles.categoryChip,
+                      { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest },
                       selected && {
                         backgroundColor: colors.primaryContainer,
                         borderColor: colors.primary,
@@ -167,6 +170,7 @@ export default function ReceiptReviewModal({
                     <Text
                       style={[
                         styles.categoryChipText,
+                        { color: colors.onSurfaceVariant },
                         selected && { color: colors.onSurface },
                       ]}
                     >
@@ -178,7 +182,7 @@ export default function ReceiptReviewModal({
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.label}>CURRENCY ON RECEIPT</Text>
+              <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>CURRENCY ON RECEIPT</Text>
               <Text style={{ fontSize: 10, color: isLiveRates ? '#4edea3' : colors.onSurfaceVariant, fontWeight: '600', marginBottom: 6 }}>
                 {isLiveRates ? '📡 Live Forex Rates' : '📊 Standard Rates'}
               </Text>
@@ -192,6 +196,7 @@ export default function ReceiptReviewModal({
                       key={curr.code}
                       style={[
                         styles.categoryChip,
+                        { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest },
                         active && {
                           backgroundColor: colors.primaryContainer,
                           borderColor: colors.primary,
@@ -202,6 +207,7 @@ export default function ReceiptReviewModal({
                       <Text
                         style={[
                           styles.categoryChipText,
+                          { color: colors.onSurfaceVariant },
                           active && { color: colors.onSurface, fontWeight: '700' },
                         ]}
                       >
@@ -225,7 +231,7 @@ export default function ReceiptReviewModal({
                 }}
               >
                 <Text style={{ color: '#4edea3', fontSize: 12, fontWeight: '600' }}>
-                  ⚡ Auto-converts {selectedCurr} to HKD upon saving (Rate: ~
+                  Auto-converts {selectedCurr} to HKD upon saving (Rate: ~
                   {
                     currencyOptions.find((c) => c.code === selectedCurr)?.rate
                   }{' '}
@@ -236,11 +242,11 @@ export default function ReceiptReviewModal({
 
             <View style={styles.row}>
               <View style={styles.col}>
-                <Text style={styles.label}>
+                <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>
                   TOTAL AMOUNT ({selectedCurr})
                 </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
                   placeholder="0.00"
                   placeholderTextColor={colors.onSurfaceVariant}
                   keyboardType="decimal-pad"
@@ -249,9 +255,9 @@ export default function ReceiptReviewModal({
                 />
               </View>
               <View style={styles.col}>
-                <Text style={styles.label}>TAX ({selectedCurr})</Text>
+                <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>TAX ({selectedCurr})</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
                   placeholder="0.00"
                   placeholderTextColor={colors.onSurfaceVariant}
                   keyboardType="decimal-pad"
@@ -262,8 +268,8 @@ export default function ReceiptReviewModal({
             </View>
 
             <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+              <TouchableOpacity style={[styles.cancelButton, { backgroundColor: colors.surfaceHigh }]} onPress={onCancel}>
+                <Text style={[styles.cancelButtonText, { color: colors.onSurfaceVariant }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmButton} onPress={handleSave}>
                 <Text style={styles.confirmButtonText}>Save & Sync to Sheets</Text>
@@ -342,7 +348,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceHigh,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
   },

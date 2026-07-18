@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import {
   saveReceipt,
   deleteReceipt,
@@ -42,6 +43,7 @@ export default function ReceiptEditModal({
   onClose,
   onUpdated,
 }) {
+  const { colors } = useTheme();
   const [merchant, setMerchant] = useState('');
   const [date, setDate] = useState('');
   const [category, setCategory] = useState('Food & Dining');
@@ -199,40 +201,40 @@ export default function ReceiptEditModal({
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>Edit / Delete Receipt</Text>
+            <Text style={[styles.title, { color: colors.onSurface }]}>Edit / Delete Receipt</Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.closeBtn}>✕</Text>
+              <Text style={[styles.closeBtn, { color: colors.onSurfaceVariant }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
           {loading ? (
             <View style={styles.loadingBox}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>{loadingAction}</Text>
+              <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>{loadingAction}</Text>
             </View>
           ) : (
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.label}>MERCHANT</Text>
+              <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>MERCHANT</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
                 value={merchant}
                 onChangeText={setMerchant}
                 placeholder="Merchant Name"
                 placeholderTextColor={colors.onSurfaceVariant}
               />
 
-              <Text style={styles.label}>DATE (YYYY-MM-DD)</Text>
+              <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>DATE (YYYY-MM-DD)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
                 value={date}
                 onChangeText={setDate}
                 placeholder="2026-07-14"
                 placeholderTextColor={colors.onSurfaceVariant}
               />
 
-              <Text style={styles.label}>CATEGORY</Text>
+              <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>CATEGORY</Text>
               <View style={styles.categoryGrid}>
                 {CATEGORIES.map((cat) => {
                   const selected = cat === category;
@@ -241,6 +243,7 @@ export default function ReceiptEditModal({
                       key={cat}
                       style={[
                         styles.categoryChip,
+                        { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest },
                         selected && {
                           backgroundColor: colors.primaryContainer,
                           borderColor: colors.primary,
@@ -251,6 +254,7 @@ export default function ReceiptEditModal({
                       <Text
                         style={[
                           styles.categoryChipText,
+                          { color: colors.onSurfaceVariant },
                           selected && { color: colors.onSurface, fontWeight: '700' },
                         ]}
                       >
@@ -263,40 +267,40 @@ export default function ReceiptEditModal({
 
               <View style={styles.row}>
                 <View style={styles.col}>
-                  <Text style={styles.label}>TOTAL (HKD)</Text>
+                  <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>TOTAL AMOUNT</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
                     value={totalAmount}
                     onChangeText={setTotalAmount}
-                    keyboardType="decimal-pad"
                     placeholder="0.00"
                     placeholderTextColor={colors.onSurfaceVariant}
+                    keyboardType="numeric"
                   />
                 </View>
                 <View style={styles.col}>
-                  <Text style={styles.label}>TAX (HKD)</Text>
+                  <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>TAX AMOUNT</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
                     value={tax}
                     onChangeText={setTax}
-                    keyboardType="decimal-pad"
                     placeholder="0.00"
                     placeholderTextColor={colors.onSurfaceVariant}
+                    keyboardType="numeric"
                   />
                 </View>
               </View>
 
-              <Text style={styles.label}>CURRENCY / NOTES</Text>
+              <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>NOTES / CURRENCY</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="Notes or currency details"
+                placeholder="Optional notes"
                 placeholderTextColor={colors.onSurfaceVariant}
               />
 
               <View style={styles.actionSection}>
-                <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+                <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSave}>
                   <Text style={styles.saveBtnText}>Save & Update Sheet</Text>
                 </TouchableOpacity>
 
@@ -307,13 +311,13 @@ export default function ReceiptEditModal({
                     </Text>
                     <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
                       <TouchableOpacity
-                        style={[styles.confirmBtnCancel, { flex: 1 }]}
+                        style={[styles.confirmBtnCancel, { flex: 1, backgroundColor: colors.surfaceHigh }]}
                         onPress={() => setConfirmDelete(false)}
                       >
-                        <Text style={styles.confirmBtnCancelText}>Cancel</Text>
+                        <Text style={[styles.confirmBtnCancelText, { color: colors.onSurface }]}>Cancel</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[styles.confirmBtnDelete, { flex: 1 }]}
+                        style={[styles.confirmBtnDelete, { flex: 1, backgroundColor: colors.error }]}
                         onPress={executeDelete}
                       >
                         <Text style={styles.confirmBtnDeleteText}>Yes, Delete Forever</Text>
@@ -322,10 +326,10 @@ export default function ReceiptEditModal({
                   </View>
                 ) : (
                   <TouchableOpacity
-                    style={styles.deleteBtn}
+                    style={[styles.deleteBtn, { borderColor: colors.error }]}
                     onPress={() => setConfirmDelete(true)}
                   >
-                    <Text style={styles.deleteBtnText}>🗑️ Delete Receipt</Text>
+                    <Text style={[styles.deleteBtnText, { color: colors.error }]}>🗑️ Delete Receipt</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -346,7 +350,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     padding: spacing.lg,
     maxHeight: '90%',
     borderWidth: 1,
@@ -401,7 +405,7 @@ const styles = StyleSheet.create({
   categoryChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.md,
     backgroundColor: colors.surfaceHigh,
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
@@ -460,7 +464,7 @@ const styles = StyleSheet.create({
   confirmBtnCancel: {
     backgroundColor: colors.surfaceHigh,
     paddingVertical: 12,
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
   },
   confirmBtnCancelText: {
@@ -470,7 +474,7 @@ const styles = StyleSheet.create({
   confirmBtnDelete: {
     backgroundColor: colors.error,
     paddingVertical: 12,
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
   },
   confirmBtnDeleteText: {

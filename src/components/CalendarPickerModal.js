@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import { parseAnyDate } from '../utils/dateFilters';
 
 const DAYS_OF_WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -25,6 +26,7 @@ export default function CalendarPickerModal({
   initialDate,
   title = 'Select Date',
 }) {
+  const { colors } = useTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
@@ -83,10 +85,10 @@ export default function CalendarPickerModal({
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.titleText}>{title}</Text>
+            <Text style={[styles.titleText, { color: colors.onSurface }]}>{title}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color={colors.onSurfaceVariant} />
             </TouchableOpacity>
@@ -94,15 +96,15 @@ export default function CalendarPickerModal({
 
           {/* Month Navigation */}
           <View style={styles.navRow}>
-            <TouchableOpacity onPress={prevMonth} style={styles.navBtn}>
+            <TouchableOpacity onPress={prevMonth} style={[styles.navBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}>
               <Ionicons name="chevron-back" size={20} color={colors.onSurface} />
             </TouchableOpacity>
             <TouchableOpacity onPress={goToToday} style={styles.monthYearBtn}>
-              <Text style={styles.monthYearText}>
+              <Text style={[styles.monthYearText, { color: colors.onSurface }]}>
                 {MONTH_NAMES[month]} {year}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={nextMonth} style={styles.navBtn}>
+            <TouchableOpacity onPress={nextMonth} style={[styles.navBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}>
               <Ionicons name="chevron-forward" size={20} color={colors.onSurface} />
             </TouchableOpacity>
           </View>
@@ -110,7 +112,7 @@ export default function CalendarPickerModal({
           {/* Days of Week Header */}
           <View style={styles.daysOfWeekRow}>
             {DAYS_OF_WEEK.map((dow, idx) => (
-              <Text key={idx} style={styles.dowText}>
+              <Text key={idx} style={[styles.dowText, { color: colors.onSurfaceVariant }]}>
                 {dow}
               </Text>
             ))}
@@ -139,15 +141,16 @@ export default function CalendarPickerModal({
                   key={idx}
                   style={[
                     styles.dayCell,
-                    isToday && styles.todayCell,
-                    isSelected && styles.selectedCell,
+                    isSelected && { backgroundColor: colors.primary },
+                    isToday && !isSelected && { borderColor: colors.primary, borderWidth: 1 },
                   ]}
                   onPress={() => handleSelectDay(dayDate)}
                 >
                   <Text
                     style={[
                       styles.dayText,
-                      isToday && styles.todayText,
+                      { color: colors.onSurface },
+                      isToday && { color: colors.primary, fontWeight: '700' },
                       isSelected && styles.selectedText,
                     ]}
                   >
@@ -158,13 +161,13 @@ export default function CalendarPickerModal({
             })}
           </View>
 
-          {/* Footer actions */}
-          <View style={styles.footer}>
-            <TouchableOpacity onPress={goToToday} style={styles.todayBtn}>
-              <Text style={styles.todayBtnText}>Go to Today</Text>
+          {/* Footer Today Shortcut */}
+          <View style={[styles.footer, { borderTopColor: colors.surfaceHighest }]}>
+            <TouchableOpacity onPress={goToToday} style={[styles.todayBtn, { backgroundColor: colors.surfaceHigh }]}>
+              <Text style={[styles.todayBtnText, { color: colors.onSurface }]}>Go to Today</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
+            <TouchableOpacity onPress={onClose} style={[styles.cancelBtn, { backgroundColor: colors.surfaceHigh }]}>
+              <Text style={[styles.cancelBtnText, { color: colors.onSurfaceVariant }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -183,7 +186,7 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     padding: spacing.lg,
     width: '100%',
     maxWidth: 360,

@@ -124,7 +124,7 @@ export default function SpendingHistoryScreen() {
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { backgroundColor: colors.surface, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
             placeholder="Search merchants or categories..."
             placeholderTextColor={colors.onSurfaceVariant}
             value={searchQuery}
@@ -146,14 +146,16 @@ export default function SpendingHistoryScreen() {
                   key={tf}
                   style={[
                     styles.timeframeChip,
-                    selected && styles.timeframeChipSelected,
+                    { backgroundColor: colors.surface, borderColor: colors.surfaceHighest },
+                    selected && { backgroundColor: colors.surfaceHigh, borderColor: colors.primary },
                   ]}
                   onPress={() => setSelectedTimeframe(tf)}
                 >
                   <Text
                     style={[
                       styles.timeframeChipText,
-                      selected && styles.timeframeChipTextSelected,
+                      { color: colors.onSurfaceVariant },
+                      selected && { color: colors.primary, fontWeight: '700' },
                     ]}
                   >
                     {tf === 'Custom Range' ? 'Custom Range' : tf}
@@ -168,30 +170,30 @@ export default function SpendingHistoryScreen() {
         {selectedTimeframe === 'Custom Range' && (
           <View style={styles.customDateRow}>
             <View style={styles.customDateBox}>
-              <Text style={styles.customDateLabel}>FROM (DD/MM/YY)</Text>
+              <Text style={[styles.customDateLabel, { color: colors.onSurfaceVariant }]}>FROM (DD/MM/YY)</Text>
               <TouchableOpacity
-                style={styles.datePickerBtn}
+                style={[styles.datePickerBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
                 onPress={() => {
                   setCalendarTarget('start');
                   setCalendarVisible(true);
                 }}
               >
-                <Text style={styles.datePickerBtnText}>
+                <Text style={[styles.datePickerBtnText, { color: colors.onSurface }]}>
                   {customStartDate || 'Select Start Date'}
                 </Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.customDateToText}>to</Text>
+            <Text style={[styles.customDateToText, { color: colors.onSurfaceVariant }]}>to</Text>
             <View style={styles.customDateBox}>
-              <Text style={styles.customDateLabel}>TO (DD/MM/YY)</Text>
+              <Text style={[styles.customDateLabel, { color: colors.onSurfaceVariant }]}>TO (DD/MM/YY)</Text>
               <TouchableOpacity
-                style={styles.datePickerBtn}
+                style={[styles.datePickerBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
                 onPress={() => {
                   setCalendarTarget('end');
                   setCalendarVisible(true);
                 }}
               >
-                <Text style={styles.datePickerBtnText}>
+                <Text style={[styles.datePickerBtnText, { color: colors.onSurface }]}>
                   {customEndDate || 'Select End Date'}
                 </Text>
               </TouchableOpacity>
@@ -224,14 +226,16 @@ export default function SpendingHistoryScreen() {
                   key={cat}
                   style={[
                     styles.filterChip,
-                    selected && styles.filterChipSelected,
+                    { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest },
+                    selected && { backgroundColor: colors.primaryContainer, borderColor: colors.primary },
                   ]}
                   onPress={() => setSelectedCategory(cat)}
                 >
                   <Text
                     style={[
                       styles.filterChipText,
-                      selected && styles.filterChipTextSelected,
+                      { color: colors.onSurfaceVariant },
+                      selected && { color: colors.onSurface, fontWeight: '700' },
                     ]}
                   >
                     {cat}
@@ -344,7 +348,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceHigh,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
   },
@@ -400,8 +404,8 @@ const styles = StyleSheet.create({
   },
   datePickerBtn: {
     backgroundColor: colors.surfaceHigh,
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: 10,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
@@ -421,9 +425,9 @@ const styles = StyleSheet.create({
   customDateClearBtn: {
     marginTop: 14,
     backgroundColor: 'rgba(255, 100, 100, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: borderRadius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: 'rgba(255, 100, 100, 0.3)',
   },

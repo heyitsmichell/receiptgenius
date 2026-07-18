@@ -1,36 +1,38 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const ReceiptCard = React.memo(function ReceiptCard({ receipt, onPress }) {
+  const { colors } = useTheme();
   const categoryColor = colors.categories[receipt.category] || colors.primary;
   const isSynced = receipt.syncStatus === 'synced' || receipt.syncedToSheets;
 
   return (
     <TouchableOpacity
       activeOpacity={0.8}
-      style={styles.card}
+      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}
       onPress={() => onPress && onPress(receipt)}
     >
       <View style={styles.headerRow}>
         <View style={styles.merchantContainer}>
           <View style={[styles.categoryAccent, { backgroundColor: categoryColor }]} />
           <View>
-            <Text style={styles.merchantText} numberOfLines={1}>
+            <Text style={[styles.merchantText, { color: colors.onSurface }]} numberOfLines={1}>
               {receipt.merchant || 'Unknown Merchant'}
             </Text>
-            <Text style={styles.dateText}>{receipt.date}</Text>
+            <Text style={[styles.dateText, { color: colors.onSurfaceVariant }]}>{receipt.date}</Text>
           </View>
         </View>
 
         <View style={styles.amountContainer}>
-          <Text style={styles.amountText}>
+          <Text style={[styles.amountText, { color: colors.onSurface }]}>
             HKD {Number(receipt.totalAmount || 0).toFixed(2)}
           </Text>
         </View>
       </View>
 
-      <View style={styles.footerRow}>
+      <View style={[styles.footerRow, { borderTopColor: colors.surfaceHigh }]}>
         <View style={[styles.badge, { backgroundColor: colors.surfaceHigh }]}>
           <Text style={[styles.badgeText, { color: categoryColor }]}>
             {receipt.category || 'Other'}
@@ -115,7 +117,7 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.md,
   },
   badgeText: {
     fontSize: 11,

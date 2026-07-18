@@ -187,8 +187,11 @@ export default function ScanReceiptScreen({ navigation }) {
     const googleSession = await getGoogleUserSession();
     let syncSuccess = false;
     let targetSheetName = 'Google Sheets';
+    const settings = await getSettings();
+    const isAutoSyncEnabled = settings.autoSync !== false;
 
     if (
+      isAutoSyncEnabled &&
       googleSession &&
       googleSession.signedIn &&
       googleSession.accessToken &&
@@ -223,16 +226,13 @@ export default function ScanReceiptScreen({ navigation }) {
       }
     }
 
-    // Fallback to webhook if OAuth didn't execute
-    if (!syncSuccess) {
-      const settings = await getSettings();
-      if (settings && settings.webhookUrl) {
-        const syncResult = await pushToGoogleSheets(
-          confirmedReceipt,
-          settings.webhookUrl
-        );
-        syncSuccess = syncResult.success;
-      }
+    // Fallback to webhook if OAuth didn't execute and autoSync is enabled
+    if (isAutoSyncEnabled && !syncSuccess && settings && settings.webhookUrl) {
+      const syncResult = await pushToGoogleSheets(
+        confirmedReceipt,
+        settings.webhookUrl
+      );
+      syncSuccess = syncResult.success;
     }
 
     const receiptToSave = {
@@ -248,6 +248,8 @@ export default function ScanReceiptScreen({ navigation }) {
       syncSuccess ? 'Synced Successfully! 🎉' : 'Saved Locally',
       syncSuccess
         ? `Your receipt (${confirmedReceipt.merchant}) was automatically exported to "${targetSheetName}" and saved locally.`
+        : !isAutoSyncEnabled
+        ? 'Auto-sync is turned off. Receipt saved locally to your offline queue. You can push it later from your Sync tab.'
         : 'Saved to your offline queue. You can sync later from your Sheets Sync tab.',
       [{ text: 'OK', onPress: () => navigation.navigate('Dashboard') }]
     );
@@ -263,19 +265,19 @@ export default function ScanReceiptScreen({ navigation }) {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.onSurface }]}>AI Receipt Scanner</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerSubtitle, { color: colors.onSurfaceVariant }]}>
             Position receipt within frame or select from gallery
           </Text>
         </View>
 
         {/* Responsive Scanner Viewfinder Frame */}
         <View style={styles.viewfinderContainer}>
-          <View style={styles.viewfinderBox}>
+          <View style={[styles.viewfinderBox, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
             {/* 4 Corner Accents */}
-            <View style={[styles.corner, styles.topLeft]} />
-            <View style={[styles.corner, styles.topRight]} />
-            <View style={[styles.corner, styles.bottomLeft]} />
-            <View style={[styles.corner, styles.bottomRight]} />
+            <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
+            <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
+            <View style={[styles.corner, styles.bottomLeft, { borderColor: colors.primary }]} />
+            <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
 
             {webCameraActive && Platform.OS === 'web' ? (
               <View style={[StyleSheet.absoluteFill, { borderRadius: 16, overflow: 'hidden' }]}>
@@ -292,10 +294,10 @@ export default function ScanReceiptScreen({ navigation }) {
               </View>
             ) : (
               <View style={styles.viewfinderInner}>
-                <Text style={styles.viewfinderText}>
+                <Text style={[styles.viewfinderText, { color: colors.onSurface }]}>
                   GEMINI VISION SCAN READY
                 </Text>
-                <Text style={styles.viewfinderSubtext}>
+                <Text style={[styles.viewfinderSubtext, { color: colors.onSurfaceVariant }]}>
                   Powered by Google Multimodal AI
                 </Text>
               </View>
@@ -328,19 +330,19 @@ export default function ScanReceiptScreen({ navigation }) {
           ) : (
             <>
               <TouchableOpacity
-                style={styles.primaryCaptureButton}
+                style={[styles.primaryCaptureButton, { backgroundColor: colors.primary }]}
                 onPress={takePhoto}
               >
-                <Text style={styles.primaryCaptureButtonText}>
+                <Text style={[styles.primaryCaptureButtonText, { color: colors.onPrimary }]}>
                   Take Photo with Camera
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.secondaryUploadButton}
+                style={[styles.secondaryUploadButton, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
                 onPress={pickImage}
               >
-                <Text style={styles.secondaryUploadButtonText}>
+                <Text style={[styles.secondaryUploadButtonText, { color: colors.onSurface }]}>
                   Upload from Gallery
                 </Text>
               </TouchableOpacity>
@@ -363,7 +365,7 @@ export default function ScanReceiptScreen({ navigation }) {
               setReviewVisible(true);
             }}
           >
-            <Text style={styles.manualEntryText}>
+            <Text style={[styles.manualEntryText, { color: colors.secondary }]}>
               Or enter receipt manually →
             </Text>
           </TouchableOpacity>
@@ -490,7 +492,7 @@ const styles = StyleSheet.create({
   primaryCaptureButton: {
     backgroundColor: colors.primary,
     paddingVertical: 16,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
   },
   primaryCaptureButtonText: {
@@ -501,7 +503,7 @@ const styles = StyleSheet.create({
   secondaryUploadButton: {
     backgroundColor: colors.surfaceHigh,
     paddingVertical: 16,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.surfaceHighest,
