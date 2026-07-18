@@ -12,6 +12,11 @@ web-build/
 *.env
 !.env.example
 
+# AI / Agent Customizations & Brain files
+.agents/
+.gemini/
+learning_proposal.md
+
 # OS / Editor files
 .DS_Store
 *.log
