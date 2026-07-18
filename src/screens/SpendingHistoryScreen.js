@@ -75,7 +75,7 @@ export default function SpendingHistoryScreen() {
           <View>
             <Text style={styles.title}>Spending History</Text>
             <Text style={styles.subtitle}>
-              {filteredReceipts.length} transactions recorded (${filteredTotal.toFixed(2)})
+              {filteredReceipts.length} transactions recorded (HKD {filteredTotal.toFixed(2)})
             </Text>
           </View>
         </View>
@@ -170,9 +170,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
     marginTop: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   title: {
     fontSize: 24,

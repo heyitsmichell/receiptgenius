@@ -25,13 +25,13 @@ const CATEGORIES = [
 ];
 
 const INITIAL_CURRENCY_OPTIONS = [
-  { code: 'HKD', symbol: 'HK$', rate: 1.0, label: 'HKD ($)' },
-  { code: 'USD', symbol: 'US$', rate: 7.82, label: 'USD ($)' },
-  { code: 'CNY', symbol: '¥', rate: 1.08, label: 'CNY (¥)' },
-  { code: 'JPY', symbol: '¥', rate: 0.051, label: 'JPY (¥)' },
-  { code: 'EUR', symbol: '€', rate: 8.45, label: 'EUR (€)' },
-  { code: 'GBP', symbol: '£', rate: 10.05, label: 'GBP (£)' },
-  { code: 'SGD', symbol: 'S$', rate: 5.80, label: 'SGD (S$)' },
+  { code: 'HKD', symbol: 'HKD', rate: 1.0, label: 'HKD' },
+  { code: 'USD', symbol: 'USD', rate: 7.82, label: 'USD' },
+  { code: 'CNY', symbol: 'CNY', rate: 1.08, label: 'CNY' },
+  { code: 'JPY', symbol: 'JPY', rate: 0.051, label: 'JPY' },
+  { code: 'EUR', symbol: 'EUR', rate: 8.45, label: 'EUR' },
+  { code: 'GBP', symbol: 'GBP', rate: 10.05, label: 'GBP' },
+  { code: 'SGD', symbol: 'SGD', rate: 5.80, label: 'SGD' },
 ];
 
 export default function ReceiptReviewModal({
@@ -90,7 +90,7 @@ export default function ReceiptReviewModal({
 
     const conversionNote = isHKD
       ? 'Original currency HKD'
-      : `Converted from ${selectedCurr} ${rawTotal.toFixed(2)} at ${currObj.rate} HKD/${selectedCurr} -> HK$${convertedTotal.toFixed(2)}`;
+      : `Converted from ${selectedCurr} ${rawTotal.toFixed(2)} at ${currObj.rate} HKD/${selectedCurr} -> HKD ${convertedTotal.toFixed(2)}`;
 
     const updatedReceipt = {
       ...(receiptData || {}),

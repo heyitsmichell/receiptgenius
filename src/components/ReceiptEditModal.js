@@ -263,7 +263,7 @@ export default function ReceiptEditModal({
 
               <View style={styles.row}>
                 <View style={styles.col}>
-                  <Text style={styles.label}>TOTAL (HK$)</Text>
+                  <Text style={styles.label}>TOTAL (HKD)</Text>
                   <TextInput
                     style={styles.input}
                     value={totalAmount}
@@ -274,7 +274,7 @@ export default function ReceiptEditModal({
                   />
                 </View>
                 <View style={styles.col}>
-                  <Text style={styles.label}>TAX (HK$)</Text>
+                  <Text style={styles.label}>TAX (HKD)</Text>
                   <TextInput
                     style={styles.input}
                     value={tax}

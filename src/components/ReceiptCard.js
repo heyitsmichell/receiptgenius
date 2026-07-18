@@ -25,7 +25,7 @@ export default function ReceiptCard({ receipt, onPress }) {
 
         <View style={styles.amountContainer}>
           <Text style={styles.amountText}>
-            HK${Number(receipt.totalAmount || 0).toFixed(2)}
+            HKD {Number(receipt.totalAmount || 0).toFixed(2)}
           </Text>
         </View>
       </View>

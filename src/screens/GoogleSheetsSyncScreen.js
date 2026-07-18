@@ -522,10 +522,6 @@ export default function GoogleSheetsSyncScreen() {
               Manage your automated receipt exports and connected spreadsheets.
             </Text>
           </View>
-
-          <View style={styles.iconBadge}>
-            <Text style={styles.sheetIconText}>📊</Text>
-          </View>
         </View>
 
         {/* REAL ONE-CLICK GOOGLE OAUTH SIGN IN CARD */}
@@ -963,34 +959,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.lg,
+    marginTop: spacing.sm,
   },
   headerTextCol: {
     flex: 1,
-    marginRight: spacing.md,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: colors.onSurface,
-    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.onSurfaceVariant,
-    lineHeight: 20,
-  },
-  iconBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.surfaceHighest,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sheetIconText: {
-    fontSize: 28,
+    marginTop: 2,
   },
   googleAccountCard: {
     backgroundColor: 'rgba(23, 31, 51, 0.8)',

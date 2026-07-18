@@ -58,7 +58,7 @@ export default function CategoryBreakdownBar({ categoryBreakdown, totalSpend }) 
                 <Text style={styles.categoryName}>{category}</Text>
               </View>
               <View style={styles.legendRight}>
-                <Text style={styles.amountText}>${amount.toFixed(2)}</Text>
+                <Text style={styles.amountText}>HKD {amount.toFixed(2)}</Text>
                 <Text style={styles.percentText}>{percent}%</Text>
               </View>
             </View>
