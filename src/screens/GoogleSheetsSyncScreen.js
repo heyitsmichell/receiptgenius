@@ -533,7 +533,7 @@ export default function GoogleSheetsSyncScreen() {
           return [
             escape(r.id),
             escape(r.date),
-            escape(r.merchantName),
+            escape(r.merchant || r.merchantName || 'Unknown Merchant'),
             escape(r.category),
             escape(Number(r.totalAmount || 0).toFixed(2)),
             escape(Number(r.tax || 0).toFixed(2)),
