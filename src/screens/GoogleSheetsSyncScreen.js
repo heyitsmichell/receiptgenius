@@ -55,10 +55,13 @@ export default function GoogleSheetsSyncScreen() {
     clientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
     webClientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
     iosClientId: CONFIG.GOOGLE_IOS_CLIENT_ID,
-    androidClientId: CONFIG.GOOGLE_ANDROID_CLIENT_ID,
+    androidClientId: CONFIG.GOOGLE_IOS_CLIENT_ID, // Android Client IDs are blocked from browser Auth by Google, so we use the iOS Client ID which supports Custom URI Schemes!
     redirectUri: Platform.OS === 'web'
       ? (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8086')
       : undefined,
+    extraParams: {
+      prompt: 'consent',
+    },
     scopes: [
       'https://www.googleapis.com/auth/spreadsheets',
       'https://www.googleapis.com/auth/drive.readonly',
