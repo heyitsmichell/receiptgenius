@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -17,6 +17,11 @@ import {
 } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+
+WebBrowser.maybeCompleteAuthSession();
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -35,7 +40,6 @@ import { DATE_TIMEFRAMES, filterReceiptsByDate } from '../utils/dateFilters';
 import CalendarPickerModal from '../components/CalendarPickerModal';
 import { pushToGoogleSheets } from '../services/sheetsService';
 import {
-  requestGoogleAccessToken,
   fetchGoogleUserProfile,
   createGoogleSpreadsheet,
   appendReceiptToGoogleSheet,
@@ -46,6 +50,22 @@ import {
 
 export default function GoogleSheetsSyncScreen() {
   const { colors, isDark } = useTheme();
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
+    webClientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
+    redirectUri: Platform.OS === 'web'
+      ? (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8086')
+      : undefined,
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive.readonly',
+      'https://www.googleapis.com/auth/drive.file',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+    ],
+  });
+
   const [autoSync, setAutoSync] = useState(true);
   const [lastSynced, setLastSynced] = useState('Checking...');
   const [syncing, setSyncing] = useState(false);
@@ -111,50 +131,48 @@ export default function GoogleSheetsSyncScreen() {
     await saveSettings({ ...currentSettings, autoSync: value });
   };
 
-  const handleGoogleLoginOnly = () => {
-    // 1. Invoke requestGoogleAccessToken synchronously without prior await or state delays
-    requestGoogleAccessToken()
-      .then(async (token) => {
-        setOauthLoading(true);
-        try {
-          const profile = await fetchGoogleUserProfile(token);
-          const nextSession = {
-            ...googleUser,
-            signedIn: true,
-            email: profile.email || 'Google Account',
-            name: profile.name || profile.email || 'User',
-            accessToken: token,
-          };
-          setGoogleUser(nextSession);
-          await saveGoogleUserSession(nextSession);
+  useEffect(() => {
+    if (response?.type === 'success' && response.authentication?.accessToken) {
+      handleOAuthSuccess(response.authentication.accessToken);
+    } else if (response?.type === 'error' || (response && response.type !== 'success' && response.type !== 'dismiss')) {
+      Alert.alert('Google Sign-In Error', response.error?.message || 'Authentication failed or was cancelled.');
+      setOauthLoading(false);
+    } else if (response?.type === 'dismiss') {
+      setOauthLoading(false);
+    }
+  }, [response]);
 
-          // Open spreadsheet choice modal right away if they don't have a sheet linked
-          if (!nextSession.spreadsheetId) {
-            setGoogleModalVisible(true);
-            handleBrowseDriveSheets(token);
-          } else {
-            Alert.alert('Google Account Connected! 🎉', `Signed in as ${profile.email}`);
-          }
-        } catch (err) {
-          Alert.alert('Profile Error', err.message);
-        } finally {
-          setOauthLoading(false);
-        }
-      })
-      .catch((err) => {
-        const currentOrigin =
-          typeof window !== 'undefined' && window.location
-            ? window.location.origin
-            : 'http://localhost:8081';
-        if (err.message && err.message.includes('No Registered Origin')) {
-          Alert.alert(
-            'Google OAuth: No Registered Origin (401)',
-            `Google blocked the request because your current browser origin is not registered.\n\nYour exact browser origin is:\n${currentOrigin}\n\nTo fix this:\n1. Open Google Cloud Console -> Credentials -> OAuth Client ID ending in ...ns70t\n2. Under "Authorized JavaScript origins", click + ADD URI and paste:\n${currentOrigin}\n3. Click Save and wait 60 seconds before retrying.`
-          );
-        } else {
-          Alert.alert('Sign-In Failed', err.message);
-        }
-      });
+  const handleOAuthSuccess = async (token) => {
+    setOauthLoading(true);
+    try {
+      const profile = await fetchGoogleUserProfile(token);
+      const nextSession = {
+        ...googleUser,
+        signedIn: true,
+        email: profile.email || 'Google Account',
+        name: profile.name || profile.email || 'User',
+        accessToken: token,
+      };
+      setGoogleUser(nextSession);
+      await saveGoogleUserSession(nextSession);
+
+      // Open spreadsheet choice modal right away if they don't have a sheet linked
+      if (!nextSession.spreadsheetId) {
+        setGoogleModalVisible(true);
+        handleBrowseDriveSheets(token);
+      } else {
+        Alert.alert('Google Account Connected! 🎉', `Signed in as ${profile.email}`);
+      }
+    } catch (err) {
+      Alert.alert('Profile Error', err.message);
+    } finally {
+      setOauthLoading(false);
+    }
+  };
+
+  const handleGoogleLoginOnly = () => {
+    setOauthLoading(true);
+    promptAsync();
   };
 
   const handleLinkOrCreateSheet = async () => {
@@ -427,6 +445,17 @@ export default function GoogleSheetsSyncScreen() {
         `Successfully synced ${successCount || allReceipts.length} receipt(s) directly to your Google Sheet!`
       );
     } catch (err) {
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const newEntry = {
+        id: String(Date.now()),
+        type: googleUser.signedIn ? 'Google Sheet Sync Failed' : 'Export Failed',
+        details: err.message || 'Could not complete export or sync',
+        time: `Today\n${nowStr}`,
+        status: 'error',
+      };
+      const nextHistory = [newEntry, ...exportHistory];
+      setExportHistory(nextHistory);
+      saveExportHistory(nextHistory);
       Alert.alert('Export Failed', err.message);
     } finally {
       setSyncing(false);
@@ -514,6 +543,17 @@ export default function GoogleSheetsSyncScreen() {
         `Successfully retrieved ${importedCount} new receipt(s) from your Google Sheet and pushed ${exportedCount} local offline receipt(s) to "${sheetName}"!`
       );
     } catch (err) {
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const newEntry = {
+        id: String(Date.now()),
+        type: 'Two-Way Sync Failed',
+        details: err.message || 'Could not synchronize with Google Sheets',
+        time: `Today\n${nowStr}`,
+        status: 'error',
+      };
+      const nextHistory = [newEntry, ...exportHistory];
+      setExportHistory(nextHistory);
+      saveExportHistory(nextHistory);
       Alert.alert('Two-Way Sync Failed', err.message);
     } finally {
       setSyncing(false);
@@ -530,6 +570,7 @@ export default function GoogleSheetsSyncScreen() {
   };
 
   const [exportingLocal, setExportingLocal] = useState(false);
+  const [importingLocal, setImportingLocal] = useState(false);
   const [exportTimeframe, setExportTimeframe] = useState('All Time');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -617,8 +658,9 @@ export default function GoogleSheetsSyncScreen() {
             await FileSystem.writeAsStringAsync(fileUri, content, {
               encoding: FileSystem.EncodingType.UTF8,
             });
+            Alert.alert('Backup Saved ✨', `Saved directly to your selected folder!`);
           } else {
-            return;
+            throw new Error('SAF_DENIED');
           }
         } catch (safErr) {
           const fileUri = `${FileSystem.documentDirectory}${filename}`;
@@ -677,9 +719,186 @@ export default function GoogleSheetsSyncScreen() {
       if (err.message && err.message.includes('User did not share')) {
         return;
       }
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const newEntry = {
+        id: String(Date.now()),
+        type: format === 'csv' ? 'Device Backup Failed (CSV)' : 'Device Backup Failed (JSON)',
+        details: err.message || 'Could not generate or export offline backup file',
+        time: `Today\n${nowStr}`,
+        status: 'error',
+      };
+      const nextHistory = [newEntry, ...exportHistory];
+      setExportHistory(nextHistory);
+      saveExportHistory(nextHistory);
       Alert.alert('Export Failed', err.message || 'Could not export backup file.');
     } finally {
       setExportingLocal(false);
+    }
+  };
+
+  const handleImportBackup = async () => {
+    try {
+      setImportingLocal(true);
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/json', 'text/csv', 'text/comma-separated-values', 'application/csv'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        setImportingLocal(false);
+        return;
+      }
+
+      const asset = result.assets[0];
+      const filename = asset.name?.toLowerCase() || '';
+
+      if (!filename.endsWith('.json') && !filename.endsWith('.csv')) {
+        Alert.alert('Invalid File Type', 'Please select a valid ReceiptGenius .json or .csv backup file.');
+        setImportingLocal(false);
+        return;
+      }
+
+      let fileContent = '';
+
+      if (Platform.OS === 'web' && asset.file) {
+        fileContent = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = (e) => reject(e);
+          reader.readAsText(asset.file);
+        });
+      } else if (Platform.OS === 'web') {
+        fileContent = await (await fetch(asset.uri)).text();
+      } else {
+        fileContent = await FileSystem.readAsStringAsync(asset.uri, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+      }
+
+      let receiptsToImport = [];
+
+      const isJsonFile = asset.name?.toLowerCase().endsWith('.json') || fileContent.trim().startsWith('{') || fileContent.trim().startsWith('[');
+
+      if (isJsonFile) {
+        const parsed = JSON.parse(fileContent);
+        if (Array.isArray(parsed.receipts)) {
+          receiptsToImport = parsed.receipts;
+        } else if (Array.isArray(parsed)) {
+          receiptsToImport = parsed;
+        } else {
+          throw new Error('Could not find receipts list inside the JSON backup.');
+        }
+      } else {
+        const lines = fileContent.split(/\r?\n/).filter(line => line.trim().length > 0);
+        if (lines.length <= 1) {
+          throw new Error('The CSV file is empty or missing data rows.');
+        }
+        for (let i = 1; i < lines.length; i++) {
+          const rowStr = lines[i];
+          const cols = [];
+          let current = '';
+          let inQuotes = false;
+          for (let c = 0; c < rowStr.length; c++) {
+            const char = rowStr[c];
+            if (char === '"' && rowStr[c + 1] === '"') {
+              current += '"';
+              c++;
+            } else if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              cols.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          cols.push(current.trim());
+
+          if (cols.length >= 4) {
+            const idVal = cols[0] || String(Date.now() + i);
+            const dateVal = cols[1] || new Date().toISOString().slice(0, 10);
+            const merchantVal = cols[2] || 'Unknown Merchant';
+            const categoryVal = cols[3] || 'Other';
+            const totalVal = parseFloat(cols[4]) || 0;
+            const taxVal = parseFloat(cols[5]) || 0;
+            const currencyVal = cols[6] || 'HKD';
+            const methodVal = cols[7] || 'Cash';
+            const notesVal = cols[8] || '';
+
+            receiptsToImport.push({
+              id: idVal,
+              date: dateVal,
+              merchantName: merchantVal,
+              merchant: merchantVal,
+              category: categoryVal,
+              totalAmount: totalVal,
+              tax: taxVal,
+              originalCurrency: currencyVal,
+              paymentMethod: methodVal,
+              notes: notesVal,
+              syncedToSheets: true,
+              syncStatus: 'synced',
+            });
+          }
+        }
+      }
+
+      if (receiptsToImport.length === 0) {
+        Alert.alert('No Receipts Found', 'The selected file did not contain valid receipt records.');
+        return;
+      }
+
+      const existingReceipts = await getReceipts();
+      const existingIds = new Set((existingReceipts || []).map(r => String(r.id)));
+      const newReceipts = [];
+      let duplicateCount = 0;
+
+      receiptsToImport.forEach(r => {
+        const idStr = String(r.id || Date.now() + Math.random());
+        if (existingIds.has(idStr)) {
+          duplicateCount++;
+        } else {
+          newReceipts.push({ ...r, id: idStr });
+          existingIds.add(idStr);
+        }
+      });
+
+      const mergedReceipts = [...(existingReceipts || []), ...newReceipts];
+      await saveReceipts(mergedReceipts);
+
+      const now = new Date();
+      const nowStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const newEntry = {
+        id: String(Date.now()),
+        type: isJsonFile ? 'Device Restore (JSON)' : 'Device Restore (CSV)',
+        details: `${newReceipts.length} imported, ${duplicateCount} duplicates skipped from ${asset.name || 'backup file'}`,
+        time: `Today\n${nowStr}`,
+        status: 'success',
+      };
+      const nextHistory = [newEntry, ...exportHistory];
+      setExportHistory(nextHistory);
+      await saveExportHistory(nextHistory);
+      setLastSynced(`Today at ${nowStr}`);
+
+      Alert.alert(
+        'Import Successful ✨',
+        `Restored ${newReceipts.length} new receipts from ${asset.name || 'backup'} (${duplicateCount} existing duplicates skipped).`
+      );
+    } catch (err) {
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const newEntry = {
+        id: String(Date.now()),
+        type: 'Device Restore Failed',
+        details: err.message || 'Could not import or parse backup data',
+        time: `Today\n${nowStr}`,
+        status: 'error',
+      };
+      const nextHistory = [newEntry, ...exportHistory];
+      setExportHistory(nextHistory);
+      saveExportHistory(nextHistory);
+      Alert.alert('Import Failed', err.message || 'Could not import backup file.');
+    } finally {
+      setImportingLocal(false);
     }
   };
 
@@ -934,22 +1153,6 @@ export default function GoogleSheetsSyncScreen() {
                 style={[
                   styles.backupExportButton,
                   {
-                    backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                    borderColor: isDark ? 'rgba(52, 211, 153, 0.4)' : 'rgba(16, 185, 129, 0.5)',
-                    justifyContent: 'center',
-                  }
-                ]}
-                onPress={() => handleExportLocal('csv')}
-                disabled={exportingLocal || syncing}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.backupButtonTitle, { color: colors.onSurface, textAlign: 'center', marginBottom: 0 }]}>Export CSV Table</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.backupExportButton,
-                  {
                     backgroundColor: isDark ? 'rgba(96, 165, 250, 0.15)' : 'rgba(37, 99, 235, 0.12)',
                     borderColor: isDark ? 'rgba(96, 165, 250, 0.4)' : 'rgba(37, 99, 235, 0.4)',
                     justifyContent: 'center',
@@ -961,6 +1164,55 @@ export default function GoogleSheetsSyncScreen() {
               >
                 <Text style={[styles.backupButtonTitle, { color: colors.onSurface, textAlign: 'center', marginBottom: 0 }]}>Export JSON Backup</Text>
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.backupExportButton,
+                  {
+                    backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                    borderColor: isDark ? 'rgba(52, 211, 153, 0.4)' : 'rgba(16, 185, 129, 0.5)',
+                    justifyContent: 'center',
+                  }
+                ]}
+                onPress={() => handleExportLocal('csv')}
+                disabled={exportingLocal || syncing}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.backupButtonTitle, { color: colors.onSurface, textAlign: 'center', marginBottom: 0 }]}>Export CSV Table</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Import / Restore Backup Section right below Export buttons */}
+            <View style={{ marginTop: spacing.xl, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.surfaceHighest }}>
+              <Text style={[styles.cardSubtitle, { color: colors.onSurface, fontWeight: '600', marginBottom: 4 }]}>
+                Restore from Device Backup
+              </Text>
+              <Text style={[styles.cardDesc, { color: colors.onSurfaceVariant, marginBottom: spacing.md }]}>
+                Import receipts from a previously saved ReceiptGenius JSON backup or external CSV file. Existing receipts will not be duplicated.
+              </Text>
+
+              <View style={[styles.backupButtonsRow, { flexDirection: 'column' }]}>
+                <TouchableOpacity
+                  style={[
+                    styles.backupExportButton,
+                    {
+                      width: '100%',
+                      backgroundColor: isDark ? 'rgba(168, 85, 247, 0.15)' : 'rgba(147, 51, 234, 0.12)',
+                      borderColor: isDark ? 'rgba(168, 85, 247, 0.4)' : 'rgba(147, 51, 234, 0.4)',
+                      justifyContent: 'center',
+                    }
+                  ]}
+                  onPress={() => handleImportBackup()}
+                  disabled={exportingLocal || importingLocal || syncing}
+                  activeOpacity={0.8}
+                >
+                  {importingLocal ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Text style={[styles.backupButtonTitle, { color: colors.onSurface, textAlign: 'center', marginBottom: 0 }]}>Import Backup Data (JSON / CSV)</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -1015,7 +1267,16 @@ export default function GoogleSheetsSyncScreen() {
                       item.status === 'success' ? styles.successCircle : styles.errorCircle,
                     ]}
                   >
-                    <Text style={[styles.statusIcon, { color: colors.primary }]}>
+                    <Text
+                      style={[
+                        styles.statusIcon,
+                        {
+                          color: item.status === 'success'
+                            ? (isDark ? '#34D399' : '#16A34A')
+                            : (isDark ? '#F87171' : '#DC2626')
+                        }
+                      ]}
+                    >
                       {item.status === 'success' ? '✓' : '✕'}
                     </Text>
                   </View>

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, borderRadius } from './src/theme/theme';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { CONFIG } from './src/config/config';

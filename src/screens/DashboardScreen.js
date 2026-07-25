@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import CategoryBreakdownBar from '../components/CategoryBreakdownBar';
 import ReceiptCard from '../components/ReceiptCard';
@@ -138,22 +138,31 @@ export default function DashboardScreen({ navigation }) {
             <Text style={[styles.appTitle, { color: colors.onSurface }]}>ReceiptGenius</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TouchableOpacity
-              style={[styles.themeToggleBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
-              onPress={toggleTheme}
-            >
-              <Ionicons
-                name={isDark ? 'sunny' : 'moon'}
-                size={20}
-                color={isDark ? '#fbbf24' : '#64748b'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.scanHeaderButton, { backgroundColor: colors.primary }]}
-              onPress={() => navigation.navigate('Scan')}
-            >
-              <Text style={[styles.scanHeaderButtonText, { color: colors.onPrimary }]}>+ Scan</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.themeToggleBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
+                onPress={async () => {
+                  const { clearAllData } = require('../services/storageService');
+                  await clearAllData();
+                  await loadData();
+                  alert('All preset data cleared!');
+                }}
+              >
+                <Ionicons name="trash-outline" size={20} color={colors.primary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.themeToggleBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
+                onPress={toggleTheme}
+              >
+                <Ionicons name={isDark ? 'sunny' : 'moon'} size={20} color={isDark ? '#fbbf24' : '#64748b'} />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.scanHeaderButton, { backgroundColor: colors.primary }]}
+                onPress={() => navigation.navigate('Scan')}
+              >
+                <Text style={[styles.scanHeaderButtonText, { color: colors.onPrimary }]}>+ Scan</Text>
+              </TouchableOpacity>
           </View>
         </View>
 
