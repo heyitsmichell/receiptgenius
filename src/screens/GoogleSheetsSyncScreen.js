@@ -92,6 +92,7 @@ export default function GoogleSheetsSyncScreen() {
   const [webhookUrl, setWebhookUrl] = useState(CONFIG.GOOGLE_SHEETS_WEBHOOK_URL || '');
   const [webhookModalVisible, setWebhookModalVisible] = useState(false);
   const [tempUrl, setTempUrl] = useState('');
+  const [hardResetModalVisible, setHardResetModalVisible] = useState(false);
 
   const [exportHistory, setExportHistory] = useState([]);
 
@@ -1295,6 +1296,60 @@ export default function GoogleSheetsSyncScreen() {
             ))}
           </View>
         </View>
+
+        {/* Hard Reset */}
+        <View style={{ alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.xxl }}>
+          <TouchableOpacity onPress={() => setHardResetModalVisible(true)}>
+            <Text style={{ color: colors.error, fontWeight: 'bold', fontSize: 15 }}>Hard Reset All Data</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* HARD RESET CONFIRMATION MODAL */}
+        <Modal visible={hardResetModalVisible} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.error, borderWidth: 1 }]}>
+              <View style={{ alignItems: 'center', marginBottom: 4 }}>
+                <Text style={[styles.modalTitle, { color: colors.error, marginTop: 4 }]}>Hard Reset</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.onSurfaceVariant, textAlign: 'center', marginBottom: 0 }]}>
+                  Are you sure you want to completely wipe all your data? This cannot be undone.
+                </Text>
+              </View>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalCancelButton}
+                  onPress={() => setHardResetModalVisible(false)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.googleModalAuthButton,
+                    { 
+                      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(220, 38, 38, 0.08)', 
+                      borderColor: colors.error, 
+                      borderWidth: 1 
+                    }
+                  ]}
+                  onPress={async () => {
+                    const { clearAllData } = require('../services/storageService');
+                    await clearAllData();
+                    setHardResetModalVisible(false);
+                    if (Platform.OS === 'web') {
+                      window.alert('All data has been reset.');
+                      window.location.reload();
+                    } else {
+                      Alert.alert('Success', 'All data has been reset. Please close and reopen the app to apply changes.');
+                    }
+                  }}
+                >
+                  <Text style={[styles.googleModalAuthText, { color: colors.error }]}>Wipe Everything</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {/* GOOGLE SIGN-IN & SPREADSHEET SETUP MODAL */}
         <Modal visible={googleModalVisible} transparent animationType="fade">
