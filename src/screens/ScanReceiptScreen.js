@@ -244,15 +244,26 @@ export default function ScanReceiptScreen({ navigation }) {
     await saveReceipt(receiptToSave);
     setLoading(false);
 
-    Alert.alert(
-      syncSuccess ? 'Synced Successfully! 🎉' : 'Saved Locally',
-      syncSuccess
-        ? `Your receipt (${confirmedReceipt.merchant}) was automatically exported to "${targetSheetName}" and saved locally.`
-        : !isAutoSyncEnabled
-        ? 'Auto-sync is turned off. Receipt saved locally to your offline queue. You can push it later from your Sync tab.'
-        : 'Saved to your offline queue. You can sync later from your Sheets Sync tab.',
-      [{ text: 'OK', onPress: () => navigation.navigate('Dashboard') }]
-    );
+    // Navigate to Dashboard FIRST to avoid iOS/Android native modal freeze bugs
+    navigation.navigate('Dashboard');
+    
+    // Reset scanner state in the background
+    setReviewVisible(false);
+    setParsedReceipt(null);
+    setErrorMessage('');
+
+    // Show the success alert AFTER we have safely transitioned to the Dashboard
+    setTimeout(() => {
+      Alert.alert(
+        syncSuccess ? 'Synced Successfully! 🎉' : 'Saved Locally',
+        syncSuccess
+          ? `Your receipt (${confirmedReceipt.merchant}) was automatically exported to "${targetSheetName}" and saved locally.`
+          : !isAutoSyncEnabled
+          ? 'Auto-sync is turned off. Receipt saved locally to your offline queue. You can push it later from your Sync tab.'
+          : 'Saved to your offline queue. You can sync later from your Sheets Sync tab.',
+        [{ text: 'OK' }]
+      );
+    }, 400);
   };
 
   return (

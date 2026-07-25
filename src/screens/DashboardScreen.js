@@ -138,17 +138,6 @@ export default function DashboardScreen({ navigation }) {
             <Text style={[styles.appTitle, { color: colors.onSurface }]}>ReceiptGenius</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <TouchableOpacity
-                style={[styles.themeToggleBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
-                onPress={async () => {
-                  const { clearAllData } = require('../services/storageService');
-                  await clearAllData();
-                  await loadData();
-                  alert('All preset data cleared!');
-                }}
-              >
-                <Ionicons name="trash-outline" size={20} color={colors.primary} />
-              </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.themeToggleBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}

@@ -54,6 +54,8 @@ export default function GoogleSheetsSyncScreen() {
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
     webClientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
+    iosClientId: CONFIG.GOOGLE_IOS_CLIENT_ID,
+    androidClientId: CONFIG.GOOGLE_ANDROID_CLIENT_ID,
     redirectUri: Platform.OS === 'web'
       ? (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8086')
       : undefined,
