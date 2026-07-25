@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, borderRadius } from './src/theme/theme';
@@ -105,6 +105,7 @@ function HybridWebShell({ targetUrl, onFallbackToOffline }) {
 
 function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
   const { isDark, colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const navTheme = {
     ...DefaultTheme,
@@ -119,7 +120,7 @@ function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={colors.background} />
       {isOfflineFallback && (
         <View style={styles.offlineBanner}>
@@ -156,8 +157,8 @@ function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
               backgroundColor: colors.surface,
               borderTopColor: colors.surfaceHighest,
               borderTopWidth: 1,
-              height: 64,
-              paddingBottom: 8,
+              height: 64 + insets.bottom,
+              paddingBottom: 8 + insets.bottom,
               paddingTop: 6,
             },
             tabBarLabelStyle: {
@@ -196,7 +197,7 @@ function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
           />
         </Tab.Navigator>
       </NavigationContainer>
-    </SafeAreaView>
+    </View>
   );
 }
 
