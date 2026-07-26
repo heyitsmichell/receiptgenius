@@ -166,6 +166,11 @@ export async function fetchUserSpreadsheets(accessToken) {
   );
 
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error(
+        `Session Expired (401)\n\nYour Google login session has expired. Please tap "Cancel" and sign out of your Google Account, then sign in again to refresh your connection!`
+      );
+    }
     const errorObj = await res.json().catch(() => ({}));
     const message = errorObj.error?.message || '';
     if (message.includes('has not been used in project') || message.includes('is disabled') || res.status === 403) {
@@ -202,6 +207,11 @@ export async function getSpreadsheetDetails(accessToken, spreadsheetIdOrUrl) {
   );
 
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error(
+        `Session Expired (401)\n\nYour Google login session has expired. Please tap "Cancel" and sign out of your Google Account, then sign in again to refresh your connection!`
+      );
+    }
     const errObj = await res.json().catch(() => ({}));
     throw new Error(errObj.error?.message || 'Could not access existing Google Sheet. Check permissions or ID.');
   }

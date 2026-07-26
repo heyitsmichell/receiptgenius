@@ -13,14 +13,11 @@ export const CONFIG = {
   //   - 'gemini-flash-latest'
   GEMINI_MODEL: process.env.EXPO_PUBLIC_GEMINI_MODEL || 'gemma-4-31b-it',
 
-  // 3. Google Apps Script Web App URL (optional, loaded from EXPO_PUBLIC_WEBHOOK_URL in .env)
-  GOOGLE_SHEETS_WEBHOOK_URL: process.env.EXPO_PUBLIC_WEBHOOK_URL || '',
-
-  // 4. Google OAuth 2.0 Client ID for direct Sheets REST API syncing (loaded from EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID in .env):
+  // 3. Google OAuth 2.0 Client ID for direct Sheets REST API syncing (loaded from EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID in .env):
   GOOGLE_OAUTH_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID || '',
   GOOGLE_IOS_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '',
   GOOGLE_ANDROID_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '',
 
-  // 5. Vercel Web App URL for hybrid mobile shell (optional, loaded from EXPO_PUBLIC_VERCEL_APP_URL in .env):
+  // 4. Vercel Web App URL for hybrid mobile shell (optional, loaded from EXPO_PUBLIC_VERCEL_APP_URL in .env):
   VERCEL_APP_URL: process.env.EXPO_PUBLIC_VERCEL_APP_URL || '',
 };

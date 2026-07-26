@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -44,6 +45,7 @@ export default function SpendingHistoryScreen() {
   const [calendarTarget, setCalendarTarget] = useState('start');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const loadReceipts = async () => {
     const data = await getReceipts();
@@ -132,39 +134,81 @@ export default function SpendingHistoryScreen() {
           />
         </View>
 
-        {/* Date Timeframe Pill Filters */}
-        <View style={[styles.filterWrapper, { marginBottom: 6 }]}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryFilters}
+        {/* Expandable Filters Toggle */}
+        <View style={styles.filterToggleContainer}>
+          <TouchableOpacity 
+            style={[styles.filterToggleBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
+            onPress={() => setFiltersExpanded(!filtersExpanded)}
           >
-            {DATE_TIMEFRAMES.map((tf) => {
-              const selected = tf === selectedTimeframe;
-              return (
-                <TouchableOpacity
-                  key={tf}
-                  style={[
-                    styles.timeframeChip,
-                    { backgroundColor: colors.surface, borderColor: colors.surfaceHighest },
-                    selected && { backgroundColor: colors.surfaceHigh, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setSelectedTimeframe(tf)}
-                >
-                  <Text
-                    style={[
-                      styles.timeframeChipText,
-                      { color: colors.onSurfaceVariant },
-                      selected && { color: colors.primary, fontWeight: '700' },
-                    ]}
-                  >
-                    {tf === 'Custom Range' ? 'Custom Range' : tf}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+            <Text style={[styles.filterToggleText, { color: colors.onSurface }]}>
+              Filters {(selectedCategory !== 'All' || selectedTimeframe !== 'All Time' || customStartDate !== '') ? ' (Active)' : ''}
+            </Text>
+            <Text style={{ color: colors.onSurfaceVariant, fontSize: 12 }}>
+              {filtersExpanded ? '▲' : '▼'}
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Accordion Content */}
+        {filtersExpanded && (
+          <View style={[styles.accordionContent, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
+            <Text style={[styles.accordionSectionTitle, { color: colors.onSurfaceVariant }]}>Timeframe</Text>
+            <View style={styles.wrapContainer}>
+              {DATE_TIMEFRAMES.map((tf) => {
+                const selected = tf === selectedTimeframe;
+                return (
+                  <TouchableOpacity
+                    key={tf}
+                    style={[
+                      styles.wrapChip,
+                      { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest },
+                      selected && { backgroundColor: colors.primaryContainer, borderColor: colors.primary },
+                    ]}
+                    onPress={() => setSelectedTimeframe(tf)}
+                  >
+                    <Text
+                      style={[
+                        styles.wrapChipText,
+                        { color: colors.onSurfaceVariant },
+                        selected && { color: colors.primary, fontWeight: '700' },
+                      ]}
+                    >
+                      {tf === 'Custom Range' ? 'Custom Range' : tf}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={[styles.accordionSectionTitle, { color: colors.onSurfaceVariant, marginTop: spacing.md }]}>Category</Text>
+            <View style={styles.wrapContainer}>
+              {FILTER_CATEGORIES.map((cat) => {
+                const selected = cat === selectedCategory;
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[
+                      styles.wrapChip,
+                      { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest },
+                      selected && { backgroundColor: colors.primaryContainer, borderColor: colors.primary },
+                    ]}
+                    onPress={() => setSelectedCategory(cat)}
+                  >
+                    <Text
+                      style={[
+                        styles.wrapChipText,
+                        { color: colors.onSurfaceVariant },
+                        selected && { color: colors.onSurface, fontWeight: '700' },
+                      ]}
+                    >
+                      {cat}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Custom Date Range Input Row */}
         {selectedTimeframe === 'Custom Range' && (
@@ -212,39 +256,6 @@ export default function SpendingHistoryScreen() {
           </View>
         )}
 
-        {/* Category Pill Filters */}
-        <View style={styles.filterWrapper}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryFilters}
-          >
-            {FILTER_CATEGORIES.map((cat) => {
-              const selected = cat === selectedCategory;
-              return (
-                <TouchableOpacity
-                  key={cat}
-                  style={[
-                    styles.filterChip,
-                    { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest },
-                    selected && { backgroundColor: colors.primaryContainer, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setSelectedCategory(cat)}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      { color: colors.onSurfaceVariant },
-                      selected && { color: colors.onSurface, fontWeight: '700' },
-                    ]}
-                  >
-                    {cat}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
 
         {/* Receipts List */}
         <FlatList
@@ -270,6 +281,7 @@ export default function SpendingHistoryScreen() {
           }
         />
       </View>
+
 
       <ReceiptEditModal
         visible={!!selectedReceipt}
@@ -447,5 +459,50 @@ const styles = StyleSheet.create({
   emptyText: {
     color: colors.onSurfaceVariant,
     fontSize: 15,
+  },
+  filterToggleContainer: {
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  filterToggleBtn: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+  },
+  filterToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  accordionContent: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+  },
+  accordionSectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  wrapContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  wrapChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+  },
+  wrapChipText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

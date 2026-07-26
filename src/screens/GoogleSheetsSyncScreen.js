@@ -38,7 +38,7 @@ import {
 } from '../services/storageService';
 import { DATE_TIMEFRAMES, filterReceiptsByDate } from '../utils/dateFilters';
 import CalendarPickerModal from '../components/CalendarPickerModal';
-import { pushToGoogleSheets } from '../services/sheetsService';
+
 import {
   fetchGoogleUserProfile,
   createGoogleSpreadsheet,
@@ -93,10 +93,7 @@ export default function GoogleSheetsSyncScreen() {
   const [driveSpreadsheets, setDriveSpreadsheets] = useState([]);
   const [loadingDriveSheets, setLoadingDriveSheets] = useState(false);
 
-  // Legacy Webhook state fallback
-  const [webhookUrl, setWebhookUrl] = useState(CONFIG.GOOGLE_SHEETS_WEBHOOK_URL || '');
-  const [webhookModalVisible, setWebhookModalVisible] = useState(false);
-  const [tempUrl, setTempUrl] = useState('');
+
   const [hardResetModalVisible, setHardResetModalVisible] = useState(false);
 
   const [exportHistory, setExportHistory] = useState([]);
@@ -123,9 +120,7 @@ export default function GoogleSheetsSyncScreen() {
           if (settings.autoSync !== undefined) {
             setAutoSync(settings.autoSync);
           }
-          if (settings.webhookUrl !== undefined) {
-            setWebhookUrl(settings.webhookUrl);
-          }
+
         }
       })();
     }, [])
@@ -218,6 +213,27 @@ export default function GoogleSheetsSyncScreen() {
       const allReceipts = await getReceipts();
       const updatedReceipts = [...allReceipts];
       let uploadedCount = 0;
+
+      // RECONCILE: Pull the sheet to see what's actually there
+      try {
+        const pulledFromSheet = await pullReceiptsFromGoogleSheet(token, sheetInfo.spreadsheetId);
+        const remoteIds = new Set(pulledFromSheet.map((r) => r.id));
+        const remoteMerchantTotals = new Set(
+          pulledFromSheet.map((r) => `${r.merchant}_${Number(r.totalAmount || 0).toFixed(2)}`)
+        );
+
+        for (let i = 0; i < updatedReceipts.length; i++) {
+          if (updatedReceipts[i].syncedToSheets) {
+            const rKey = `${updatedReceipts[i].merchant}_${Number(updatedReceipts[i].totalAmount || 0).toFixed(2)}`;
+            if (!remoteIds.has(updatedReceipts[i].id) && !remoteMerchantTotals.has(rKey)) {
+              updatedReceipts[i].syncedToSheets = false;
+              updatedReceipts[i].syncStatus = 'pending';
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to reconcile remote state during link:', e);
+      }
 
       for (let i = 0; i < updatedReceipts.length; i++) {
         if (!updatedReceipts[i].syncedToSheets || updatedReceipts[i].syncStatus !== 'synced') {
@@ -368,111 +384,13 @@ export default function GoogleSheetsSyncScreen() {
     ]);
   };
 
-  const handleRunManualExport = async () => {
-    setSyncing(true);
-    try {
-      const allReceipts = await getReceipts();
-      const unsynced = allReceipts.filter((r) => !r.syncedToSheets);
 
-      if (unsynced.length === 0 && !googleUser.signedIn && !webhookUrl) {
-        Alert.alert(
-          'Connection Needed',
-          'Please connect your Google Account or configure a Webhook URL first.'
-        );
-        setSyncing(false);
-        return;
-      }
-
-      let successCount = 0;
-      const updatedReceipts = [...allReceipts];
-
-      for (let i = 0; i < updatedReceipts.length; i++) {
-        if (
-          !updatedReceipts[i].syncedToSheets ||
-          updatedReceipts[i].syncStatus !== 'synced'
-        ) {
-          // Push via real Google Sheets REST API v4 if OAuth token active
-          if (
-            googleUser.signedIn &&
-            googleUser.accessToken &&
-            googleUser.spreadsheetId
-          ) {
-            await appendReceiptToGoogleSheet(
-              googleUser.accessToken,
-              googleUser.spreadsheetId,
-              updatedReceipts[i]
-            );
-            updatedReceipts[i].syncedToSheets = true;
-            updatedReceipts[i].syncStatus = 'synced';
-            successCount++;
-          }
-          // Fallback to Apps Script Webhook if configured
-          else if (webhookUrl || CONFIG.GOOGLE_SHEETS_WEBHOOK_URL) {
-            const res = await pushToGoogleSheets(
-              updatedReceipts[i],
-              webhookUrl || CONFIG.GOOGLE_SHEETS_WEBHOOK_URL
-            );
-            if (res.success) {
-              updatedReceipts[i].syncedToSheets = true;
-              updatedReceipts[i].syncStatus = 'synced';
-              successCount++;
-            }
-          } else {
-            // Even if offline/simulating export, reconcile flag so homepage stays in sync
-            updatedReceipts[i].syncedToSheets = true;
-            updatedReceipts[i].syncStatus = 'synced';
-            successCount++;
-          }
-        }
-      }
-
-      await saveReceipts(updatedReceipts);
-
-      const nowStr = new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      setLastSynced(`Today at ${nowStr}`);
-
-      const sheetName = googleUser.spreadsheetTitle || 'ReceiptGenius Expenses 2026';
-      const newEntry = {
-        id: String(Date.now()),
-        type: googleUser.signedIn ? 'Google REST API v4 Sync' : 'Manual Export',
-        details: `${successCount || allReceipts.length} receipts synced to ${sheetName}`,
-        time: `Today\n${nowStr}`,
-        status: 'success',
-      };
-      const nextHistory = [newEntry, ...exportHistory];
-      setExportHistory(nextHistory);
-      await saveExportHistory(nextHistory);
-
-      Alert.alert(
-        'Export Complete ✨',
-        `Successfully synced ${successCount || allReceipts.length} receipt(s) directly to your Google Sheet!`
-      );
-    } catch (err) {
-      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const newEntry = {
-        id: String(Date.now()),
-        type: googleUser.signedIn ? 'Google Sheet Sync Failed' : 'Export Failed',
-        details: err.message || 'Could not complete export or sync',
-        time: `Today\n${nowStr}`,
-        status: 'error',
-      };
-      const nextHistory = [newEntry, ...exportHistory];
-      setExportHistory(nextHistory);
-      saveExportHistory(nextHistory);
-      Alert.alert('Export Failed', err.message);
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const handleTwoWaySync = async () => {
     if (!googleUser.signedIn || !googleUser.accessToken || !googleUser.spreadsheetId) {
       Alert.alert(
         'Google Account Needed',
-        'Please connect your Google Account above first to run a two-way sync with Google Sheets.'
+        'Please connect your Google Account above first to run a sync with Google Sheets.'
       );
       return;
     }
@@ -505,6 +423,22 @@ export default function GoogleSheetsSyncScreen() {
         }
       }
 
+      // 2.5 RECONCILE: Identify local receipts that think they are synced but are missing from remote
+      const remoteIds = new Set(pulledFromSheet.map((r) => r.id));
+      const remoteMerchantTotals = new Set(
+        pulledFromSheet.map((r) => `${r.merchant}_${Number(r.totalAmount || 0).toFixed(2)}`)
+      );
+
+      for (let i = 0; i < mergedReceipts.length; i++) {
+        if (mergedReceipts[i].syncedToSheets) {
+          const rKey = `${mergedReceipts[i].merchant}_${Number(mergedReceipts[i].totalAmount || 0).toFixed(2)}`;
+          if (!remoteIds.has(mergedReceipts[i].id) && !remoteMerchantTotals.has(rKey)) {
+            mergedReceipts[i].syncedToSheets = false;
+            mergedReceipts[i].syncStatus = 'pending';
+          }
+        }
+      }
+
       // 3. PUSH: Upload any local receipts that haven't been synced to Google Sheets yet
       let exportedCount = 0;
       for (let i = 0; i < mergedReceipts.length; i++) {
@@ -519,7 +453,7 @@ export default function GoogleSheetsSyncScreen() {
             mergedReceipts[i].syncStatus = 'synced';
             exportedCount++;
           } catch (err) {
-            console.warn('Failed pushing offline item during two-way sync:', mergedReceipts[i].id);
+            console.warn('Failed pushing offline item during full sync:', mergedReceipts[i].id);
           }
         }
       }
@@ -535,7 +469,7 @@ export default function GoogleSheetsSyncScreen() {
       const sheetName = googleUser.spreadsheetTitle || 'Google Sheet';
       const newEntry = {
         id: String(Date.now()),
-        type: 'Two-Way Sync (Pull & Push)',
+        type: 'Google Sheets Full Sync',
         details: `Imported ${importedCount} receipt(s) from sheet & exported ${exportedCount} offline receipt(s) to ${sheetName}`,
         time: `Today\n${nowStr}`,
         status: 'success',
@@ -545,14 +479,14 @@ export default function GoogleSheetsSyncScreen() {
       await saveExportHistory(nextHistory);
 
       Alert.alert(
-        'Two-Way Sync Complete',
+        'Sync Complete',
         `Successfully retrieved ${importedCount} new receipt(s) from your Google Sheet and pushed ${exportedCount} local offline receipt(s) to "${sheetName}"!`
       );
     } catch (err) {
       const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const newEntry = {
         id: String(Date.now()),
-        type: 'Two-Way Sync Failed',
+        type: 'Google Sheets Sync Failed',
         details: err.message || 'Could not synchronize with Google Sheets',
         time: `Today\n${nowStr}`,
         status: 'error',
@@ -560,24 +494,16 @@ export default function GoogleSheetsSyncScreen() {
       const nextHistory = [newEntry, ...exportHistory];
       setExportHistory(nextHistory);
       saveExportHistory(nextHistory);
-      Alert.alert('Two-Way Sync Failed', err.message);
+      Alert.alert('Sync Failed', err.message);
     } finally {
       setSyncing(false);
     }
   };
 
-  const handleSaveWebhook = async () => {
-    setWebhookUrl(tempUrl);
-    CONFIG.GOOGLE_SHEETS_WEBHOOK_URL = tempUrl;
-    const currentSettings = await getSettings();
-    await saveSettings({ ...currentSettings, webhookUrl: tempUrl });
-    setWebhookModalVisible(false);
-    Alert.alert('Webhook Connected', 'Your Google Spreadsheet connection is now active.');
-  };
-
   const [exportingLocal, setExportingLocal] = useState(false);
   const [importingLocal, setImportingLocal] = useState(false);
   const [exportTimeframe, setExportTimeframe] = useState('All Time');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [calendarVisible, setCalendarVisible] = useState(false);
@@ -1044,17 +970,7 @@ export default function GoogleSheetsSyncScreen() {
                 disabled={syncing}
               >
                 <Text style={styles.twoWaySyncButtonText}>
-                  {syncing ? 'Syncing...' : 'Two-Way Sync'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.runExportButton, { backgroundColor: colors.surfaceHighest, borderColor: colors.outlineVariant }]}
-                onPress={handleRunManualExport}
-                disabled={syncing}
-              >
-                <Text style={[styles.runExportButtonText, { color: colors.onSurface }]}>
-                  {syncing ? 'Exporting...' : 'Push Offline Only'}
+                  {syncing ? 'Syncing...' : 'Sync with Google Sheets'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1078,35 +994,51 @@ export default function GoogleSheetsSyncScreen() {
             </View>
 
             <View style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
-              <Text style={{ fontSize: 12, color: colors.onSurfaceVariant, marginBottom: 8, fontWeight: '600' }}>
-                Select Export Timeframe:
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                {DATE_TIMEFRAMES.map((tf) => {
-                  const selected = tf === exportTimeframe;
-                  return (
-                    <TouchableOpacity
-                      key={tf}
-                      style={[
-                        styles.timeframeChip,
-                        { backgroundColor: colors.surface, borderColor: colors.surfaceHighest },
-                        selected && { backgroundColor: isDark ? 'rgba(0, 255, 163, 0.15)' : 'rgba(16, 185, 129, 0.15)', borderColor: colors.primary },
-                      ]}
-                      onPress={() => setExportTimeframe(tf)}
-                    >
-                      <Text
-                        style={[
-                          styles.timeframeChipText,
-                          { color: colors.onSurfaceVariant },
-                          selected && { color: colors.primary, fontWeight: '700' },
-                        ]}
-                      >
-                        {tf === 'Custom Range' ? 'Custom Range' : tf}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+              <View style={styles.filterToggleContainer}>
+                <TouchableOpacity 
+                  style={[styles.filterToggleBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
+                  onPress={() => setFiltersExpanded(!filtersExpanded)}
+                >
+                  <Text style={[styles.filterToggleText, { color: colors.onSurface }]}>
+                    Export Filter {(exportTimeframe !== 'All Time' || customStart !== '') ? ` (${exportTimeframe})` : ''}
+                  </Text>
+                  <Text style={{ color: colors.onSurfaceVariant, fontSize: 12 }}>
+                    {filtersExpanded ? '▲' : '▼'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {filtersExpanded && (
+                <View style={[styles.accordionContent, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
+                  <Text style={[styles.accordionSectionTitle, { color: colors.onSurfaceVariant }]}>Timeframe</Text>
+                  <View style={styles.wrapContainer}>
+                    {DATE_TIMEFRAMES.map((tf) => {
+                      const selected = tf === exportTimeframe;
+                      return (
+                        <TouchableOpacity
+                          key={tf}
+                          style={[
+                            styles.wrapChip,
+                            { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest },
+                            selected && { backgroundColor: colors.primaryContainer, borderColor: colors.primary },
+                          ]}
+                          onPress={() => setExportTimeframe(tf)}
+                        >
+                          <Text
+                            style={[
+                              styles.wrapChipText,
+                              { color: colors.onSurfaceVariant },
+                              selected && { color: colors.primary, fontWeight: '700' },
+                            ]}
+                          >
+                            {tf === 'Custom Range' ? 'Custom Range' : tf}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
 
               {exportTimeframe === 'Custom Range' && (
                 <View style={[styles.customDateRow, { marginTop: 10, paddingHorizontal: 0 }]}>
@@ -1220,42 +1152,6 @@ export default function GoogleSheetsSyncScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
-        </View>
-
-        {/* Advanced Webhook Configuration Accordion */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Advanced Webhook Mode</Text>
-            <Text style={[styles.sectionBadgeText, { color: colors.onSurfaceVariant, backgroundColor: colors.surfaceHighest }]}>Optional</Text>
-          </View>
-
-          <View style={[styles.sheetCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
-            <View style={styles.sheetCardTop}>
-              <View style={styles.sheetCardTitleRow}>
-                <Text style={[styles.sheetName, { color: colors.onSurface }]}>Google Apps Script Webhook</Text>
-              </View>
-              <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>
-                  {webhookUrl ? 'Connected' : 'Unlinked'}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={[styles.sheetIdText, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
-              {webhookUrl || 'No custom webhook script configured'}
-            </Text>
-            <TouchableOpacity
-              style={styles.connectNewButton}
-              onPress={() => {
-                setTempUrl(webhookUrl);
-                setWebhookModalVisible(true);
-              }}
-            >
-              <Text style={[styles.connectNewButtonText, { color: colors.primary }]}>
-                {webhookUrl ? '⚙️ Edit Webhook URL' : '+ Paste Webhook URL (Advanced)'}
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -1526,42 +1422,7 @@ export default function GoogleSheetsSyncScreen() {
           </View>
         </Modal>
 
-        {/* WEBHOOK CONFIGURATION MODAL */}
-        <Modal visible={webhookModalVisible} transparent animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
-              <Text style={[styles.modalTitle, { color: colors.onSurface }]}>Google Sheets Webhook URL</Text>
-              <Text style={[styles.modalSubtitle, { color: colors.onSurfaceVariant }]}>
-                Paste your deployed Google Apps Script Web App URL below:
-              </Text>
 
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.surfaceHigh, color: colors.onSurface, borderColor: colors.surfaceHighest }]}
-                placeholder="https://script.google.com/macros/s/.../exec"
-                placeholderTextColor={colors.onSurfaceVariant}
-                value={tempUrl}
-                onChangeText={setTempUrl}
-                autoCapitalize="none"
-              />
-
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={styles.modalCancelButton}
-                  onPress={() => setWebhookModalVisible(false)}
-                >
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.modalSaveButton}
-                  onPress={handleSaveWebhook}
-                >
-                  <Text style={styles.modalSaveText}>Save Connection</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
       </ScrollView>
 
       <CalendarPickerModal
@@ -2240,5 +2101,48 @@ const styles = StyleSheet.create({
   backupButtonSubtitle: {
     color: colors.onSurfaceVariant,
     fontSize: 11,
+  },
+  filterToggleContainer: {
+    marginBottom: spacing.sm,
+  },
+  filterToggleBtn: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+  },
+  filterToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  accordionContent: {
+    marginBottom: spacing.sm,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+  },
+  accordionSectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  wrapContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  wrapChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+  },
+  wrapChipText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

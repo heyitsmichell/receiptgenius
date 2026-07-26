@@ -15,7 +15,7 @@ import { colors, spacing, borderRadius } from '../theme/theme';
 import LoadingOverlay from '../components/LoadingOverlay';
 import ReceiptReviewModal from '../components/ReceiptReviewModal';
 import { scanReceiptImage } from '../services/geminiService';
-import { pushToGoogleSheets } from '../services/sheetsService';
+
 import {
   saveReceipt,
   getSettings,
@@ -224,15 +224,6 @@ export default function ScanReceiptScreen({ navigation }) {
       } catch (err) {
         console.warn('OAuth live append failed, checking fallback webhook:', err);
       }
-    }
-
-    // Fallback to webhook if OAuth didn't execute and autoSync is enabled
-    if (isAutoSyncEnabled && !syncSuccess && settings && settings.webhookUrl) {
-      const syncResult = await pushToGoogleSheets(
-        confirmedReceipt,
-        settings.webhookUrl
-      );
-      syncSuccess = syncResult.success;
     }
 
     const receiptToSave = {
