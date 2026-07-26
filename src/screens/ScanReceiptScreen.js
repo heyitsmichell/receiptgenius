@@ -33,6 +33,7 @@ export default function ScanReceiptScreen({ navigation }) {
   const [reviewVisible, setReviewVisible] = useState(false);
   const [parsedReceipt, setParsedReceipt] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [scannedImageUri, setScannedImageUri] = useState(null);
 
   // Web Camera live feed state
   const [webCameraActive, setWebCameraActive] = useState(false);
@@ -101,6 +102,7 @@ export default function ScanReceiptScreen({ navigation }) {
 
     stopWebcam();
     if (base64Data) {
+      setScannedImageUri(base64Url);
       processImage(base64Data);
     }
   };
@@ -128,6 +130,7 @@ export default function ScanReceiptScreen({ navigation }) {
     });
 
     if (!result.canceled && result.assets?.[0]?.base64) {
+      setScannedImageUri(result.assets[0].uri);
       processImage(result.assets[0].base64);
     }
   };
@@ -150,6 +153,7 @@ export default function ScanReceiptScreen({ navigation }) {
     });
 
     if (!result.canceled && result.assets?.[0]?.base64) {
+      setScannedImageUri(result.assets[0].uri);
       processImage(result.assets[0].base64);
     }
   };
@@ -242,6 +246,7 @@ export default function ScanReceiptScreen({ navigation }) {
     setReviewVisible(false);
     setParsedReceipt(null);
     setErrorMessage('');
+    setScannedImageUri(null);
 
     // Show the success alert AFTER we have safely transitioned to the Dashboard
     setTimeout(() => {
@@ -381,8 +386,12 @@ export default function ScanReceiptScreen({ navigation }) {
           visible={reviewVisible}
           receiptData={parsedReceipt}
           errorMessage={errorMessage}
+          imageUri={scannedImageUri}
           onConfirm={handleConfirmReceipt}
-          onCancel={() => setReviewVisible(false)}
+          onCancel={() => {
+            setReviewVisible(false);
+            setScannedImageUri(null);
+          }}
         />
       </ScrollView>
     </SafeAreaView>

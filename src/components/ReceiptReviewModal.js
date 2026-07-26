@@ -9,6 +9,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -39,10 +40,12 @@ export default function ReceiptReviewModal({
   visible,
   receiptData,
   errorMessage,
+  imageUri,
   onConfirm,
   onCancel,
 }) {
   const { colors } = useTheme();
+  const [showImage, setShowImage] = useState(false);
   const [merchant, setMerchant] = useState('');
   const [date, setDate] = useState('');
   const [category, setCategory] = useState('Food & Dining');
@@ -129,6 +132,25 @@ export default function ReceiptReviewModal({
             {errorMessage ? (
               <View style={styles.errorBanner}>
                 <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
+
+            {imageUri ? (
+              <View style={styles.imageContainer}>
+                <TouchableOpacity
+                  style={[styles.toggleImageButton, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
+                  onPress={() => setShowImage(!showImage)}
+                >
+                  <Text style={[styles.toggleImageText, { color: colors.primary }]}>
+                    {showImage ? 'Hide Original Receipt' : 'View Original Receipt'}
+                  </Text>
+                </TouchableOpacity>
+                {showImage && (
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={styles.scannedImage}
+                  />
+                )}
               </View>
             ) : null}
 
@@ -392,5 +414,27 @@ const styles = StyleSheet.create({
     color: colors.onPrimary,
     fontWeight: '700',
     fontSize: 15,
+  },
+  imageContainer: {
+    marginBottom: spacing.md,
+    marginTop: spacing.sm,
+  },
+  toggleImageButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  toggleImageText: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  scannedImage: {
+    width: '100%',
+    height: 350,
+    resizeMode: 'contain',
+    marginTop: spacing.sm,
+    borderRadius: borderRadius.md,
   },
 });
