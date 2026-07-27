@@ -95,6 +95,7 @@ export default function GoogleSheetsSyncScreen() {
 
 
   const [hardResetModalVisible, setHardResetModalVisible] = useState(false);
+  const [emailRevealed, setEmailRevealed] = useState(false);
 
   const [exportHistory, setExportHistory] = useState([]);
 
@@ -859,9 +860,18 @@ export default function GoogleSheetsSyncScreen() {
                 {googleUser.signedIn ? 'Cloud Save Connected' : 'Cloud Save'}
               </Text>
               {googleUser.signedIn && (
-                <Text style={styles.googleCardSubtitle}>
-                  Signed in as {googleUser.email}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                  <Text style={[styles.googleCardSubtitle, { marginTop: 0 }]}>Signed in as </Text>
+                  <TouchableOpacity activeOpacity={0.8} onPress={() => setEmailRevealed(!emailRevealed)}>
+                    {emailRevealed ? (
+                      <Text style={[styles.googleCardSubtitle, { marginTop: 0, color: colors.primary, fontWeight: '600' }]}>{googleUser.email}</Text>
+                    ) : (
+                      <View style={{ backgroundColor: colors.onSurfaceVariant, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 0 }}>
+                        <Text style={[styles.googleCardSubtitle, { marginTop: 0, color: colors.onSurfaceVariant, opacity: 0 }]}>{googleUser.email}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           </View>
@@ -924,10 +934,13 @@ export default function GoogleSheetsSyncScreen() {
                 </View>
               )}
 
-              <View style={{ marginTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.surfaceHighest, paddingTop: spacing.sm, alignItems: 'center' }}>
-                <TouchableOpacity onPress={handleGoogleSignOut}>
-                  <Text style={{ fontSize: 12, color: colors.onSurfaceVariant, textDecorationLine: 'underline' }}>
-                    Sign out of Google Account ({googleUser.email})
+              <View style={{ marginTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.surfaceHighest, paddingTop: spacing.md, alignItems: 'center' }}>
+                <TouchableOpacity 
+                  onPress={handleGoogleSignOut}
+                  style={{ paddingVertical: 8, paddingHorizontal: 16, backgroundColor: colors.surfaceHighest, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.outlineVariant }}
+                >
+                  <Text style={{ fontSize: 13, color: colors.onSurface, fontWeight: '600' }}>
+                    Sign Out
                   </Text>
                 </TouchableOpacity>
               </View>
