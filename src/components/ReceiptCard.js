@@ -2,11 +2,13 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
+import { useCategories } from '../context/CategoryContext';
 
 const ReceiptCard = React.memo(function ReceiptCard({ receipt, onPress }) {
   const { colors } = useTheme();
+  const { getCategoryColor } = useCategories();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const categoryColor = colors.categories[receipt.category] || colors.primary;
+  const categoryColor = getCategoryColor(receipt.category);
   const isSynced = receipt.syncStatus === 'synced' || receipt.syncedToSheets;
 
   return (

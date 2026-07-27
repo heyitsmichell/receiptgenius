@@ -25,9 +25,11 @@ import {
 } from '../services/storageService';
 import { appendReceiptToGoogleSheet } from '../services/googleOAuthSheetsService';
 import { useTheme } from '../context/ThemeContext';
+import { useCategories } from '../context/CategoryContext';
 
 export default function ScanReceiptScreen({ navigation }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const { categories } = useCategories();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState('');
@@ -166,7 +168,8 @@ export default function ScanReceiptScreen({ navigation }) {
     setLoadingStage('Analyzing receipt with Gemini AI...');
 
     const settings = await getSettings();
-    const scanResult = await scanReceiptImage(base64Image, settings.geminiApiKey);
+    const categoryLabels = categories.map(c => c.label);
+    const scanResult = await scanReceiptImage(base64Image, settings.geminiApiKey, categoryLabels);
 
     setLoading(false);
 

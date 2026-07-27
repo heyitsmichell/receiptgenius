@@ -16,6 +16,7 @@ import * as WebBrowser from 'expo-web-browser';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, borderRadius } from './src/theme/theme';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { CategoryProvider } from './src/context/CategoryContext';
 import { CONFIG } from './src/config/config';
 
 import DashboardScreen from './src/screens/DashboardScreen';
@@ -213,9 +214,11 @@ export default function App() {
   if (Platform.OS === 'web' || (typeof __DEV__ !== 'undefined' && __DEV__) || !vercelUrl.startsWith('http')) {
     return (
       <SafeAreaProvider>
-        <ThemeProvider>
-          <NativeAppContent isOfflineFallback={false} />
-        </ThemeProvider>
+        <CategoryProvider>
+          <ThemeProvider>
+            <NativeAppContent isOfflineFallback={false} />
+          </ThemeProvider>
+        </CategoryProvider>
       </SafeAreaProvider>
     );
   }
@@ -225,12 +228,14 @@ export default function App() {
   if (useOfflineFallback) {
     return (
       <SafeAreaProvider>
-        <ThemeProvider>
-          <NativeAppContent
-            isOfflineFallback={true}
-            onRetryOnline={() => setUseOfflineFallback(false)}
-          />
-        </ThemeProvider>
+        <CategoryProvider>
+          <ThemeProvider>
+            <NativeAppContent
+              isOfflineFallback={true}
+              onRetryOnline={() => setUseOfflineFallback(false)}
+            />
+          </ThemeProvider>
+        </CategoryProvider>
       </SafeAreaProvider>
     );
   }
@@ -238,12 +243,14 @@ export default function App() {
   // Otherwise, render the hybrid WebView shell pointing to Vercel
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <HybridWebShell
-          targetUrl={vercelUrl}
-          onFallbackToOffline={() => setUseOfflineFallback(true)}
-        />
-      </ThemeProvider>
+      <CategoryProvider>
+        <ThemeProvider>
+          <HybridWebShell
+            targetUrl={vercelUrl}
+            onFallbackToOffline={() => setUseOfflineFallback(true)}
+          />
+        </ThemeProvider>
+      </CategoryProvider>
     </SafeAreaProvider>
   );
 }

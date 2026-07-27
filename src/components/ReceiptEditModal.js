@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
+import { useCategories } from '../context/CategoryContext';
+import CalendarPickerModal from './CalendarPickerModal';
 import {
   saveReceipt,
   deleteReceipt,
@@ -26,16 +28,7 @@ import {
   deleteReceiptFromGoogleSheet,
 } from '../services/googleOAuthSheetsService';
 
-const CATEGORIES = [
-  'Food & Dining',
-  'Groceries',
-  'Transportation',
-  'Shopping',
-  'Utilities & Bills',
-  'Entertainment',
-  'Healthcare',
-  'Other',
-];
+
 
 export default function ReceiptEditModal({
   visible,
@@ -44,6 +37,7 @@ export default function ReceiptEditModal({
   onUpdated,
 }) {
   const { colors } = useTheme();
+  const { categories } = useCategories();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [merchant, setMerchant] = useState('');
   const [date, setDate] = useState('');
@@ -237,7 +231,8 @@ export default function ReceiptEditModal({
 
               <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>CATEGORY</Text>
               <View style={styles.categoryGrid}>
-                {CATEGORIES.map((cat) => {
+                {categories.map((catObj) => {
+                const cat = catObj.label;
                   const selected = cat === category;
                   return (
                     <TouchableOpacity

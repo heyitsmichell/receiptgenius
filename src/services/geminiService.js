@@ -8,16 +8,16 @@ import { CONFIG } from '../config/config';
 
 const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
-export const GEMINI_OCR_PROMPT = `
+export const getGeminiOcrPrompt = (categories = []) => `
 You are an expert financial OCR receipt scanner. Analyze the provided receipt image and extract all transaction details with extreme accuracy.
 Return ONLY a valid JSON object matching the requested schema. If a field is illegible or missing, use reasonable defaults or null, but never violate the schema types.
 Always output the default currency code as "HKD".
 
 Categorize the merchant into exactly one of these categories:
-["Food & Dining", "Groceries", "Transportation", "Shopping", "Utilities & Bills", "Entertainment", "Healthcare", "Other"]
+${JSON.stringify(categories.length ? categories : ["Other"])}
 `.trim();
 
-export const RECEIPT_RESPONSE_SCHEMA = {
+export const getReceiptResponseSchema = (categories = []) => ({
   type: 'OBJECT',
   properties: {
     merchant: {
@@ -30,16 +30,7 @@ export const RECEIPT_RESPONSE_SCHEMA = {
     },
     category: {
       type: 'STRING',
-      enum: [
-        'Food & Dining',
-        'Groceries',
-        'Transportation',
-        'Shopping',
-        'Utilities & Bills',
-        'Entertainment',
-        'Healthcare',
-        'Other',
-      ],
+      enum: categories.length ? categories : ['Other'],
     },
     subtotal: {
       type: 'NUMBER',
@@ -93,15 +84,16 @@ export const RECEIPT_RESPONSE_SCHEMA = {
     },
   },
   required: ['merchant', 'date', 'category', 'totalAmount', 'currency', 'confidenceScore'],
-};
+});
 
 /**
  * Scan receipt image base64 using Gemini API
  * @param {string} base64Image - Base64 encoded image string (without data:image prefix or with it)
  * @param {string} apiKey - Google AI Studio API Key
+ * @param {string[]} categoryLabels - Array of custom category names
  * @returns {Promise<{success: boolean, data?: object, error?: string, requiresManualInput?: boolean}>}
  */
-export async function scanReceiptImage(base64Image, apiKey) {
+export async function scanReceiptImage(base64Image, apiKey, categoryLabels = []) {
   const activeKey = (apiKey && typeof apiKey === 'string' && apiKey.trim()) || (CONFIG.GEMINI_API_KEY && typeof CONFIG.GEMINI_API_KEY === 'string' && CONFIG.GEMINI_API_KEY.trim()) || '';
   const configuredModel = CONFIG.GEMINI_MODEL || 'gemma-4-31b-it';
   // Map legacy or smaller 12B model IDs to Google AI Studio's active 31B instruction-tuned Gemma vision endpoint
@@ -123,7 +115,7 @@ export async function scanReceiptImage(base64Image, apiKey) {
     contents: [
       {
         parts: [
-          { text: GEMINI_OCR_PROMPT },
+          { text: getGeminiOcrPrompt(categoryLabels) },
           {
             inline_data: {
               mime_type: 'image/jpeg',
@@ -138,7 +130,7 @@ export async function scanReceiptImage(base64Image, apiKey) {
       topP: 0.8,
       topK: 32,
       responseMimeType: 'application/json',
-      responseSchema: RECEIPT_RESPONSE_SCHEMA,
+      responseSchema: getReceiptResponseSchema(categoryLabels),
     },
   };
 

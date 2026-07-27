@@ -2,9 +2,11 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
+import { useCategories } from '../context/CategoryContext';
 
 export default function CategoryBreakdownBar({ categoryBreakdown, totalSpend }) {
   const { colors } = useTheme();
+  const { getCategoryColor } = useCategories();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const categories = Object.keys(categoryBreakdown || {});
 
@@ -26,7 +28,7 @@ export default function CategoryBreakdownBar({ categoryBreakdown, totalSpend }) 
         {categories.map((category, index) => {
           const amount = categoryBreakdown[category];
           const widthPercent = Math.max(2, (amount / totalSpend) * 100);
-          const color = colors.categories[category] || colors.primary;
+          const color = getCategoryColor(category);
 
           return (
             <View
@@ -52,7 +54,7 @@ export default function CategoryBreakdownBar({ categoryBreakdown, totalSpend }) 
         {categories.map(category => {
           const amount = categoryBreakdown[category];
           const percent = ((amount / totalSpend) * 100).toFixed(1);
-          const color = colors.categories[category] || colors.primary;
+          const color = getCategoryColor(category);
 
           return (
             <View key={category} style={styles.legendRow}>

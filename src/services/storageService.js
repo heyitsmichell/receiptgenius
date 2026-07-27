@@ -7,10 +7,32 @@ import { CONFIG } from '../config/config';
 
 const RECEIPTS_KEY = '@receiptgenius_receipts';
 const SETTINGS_KEY = '@receiptgenius_settings';
+const CATEGORIES_KEY = '@receiptgenius_categories';
 
 const INITIAL_SAMPLE_RECEIPTS = [];
 
 const PRESET_RECEIPT_IDS = ['REC-1001', 'REC-1002', 'REC-1003', 'REC-1004'];
+
+/**
+ * Category Storage
+ */
+export async function getCategories() {
+  try {
+    const data = await AsyncStorage.getItem(CATEGORIES_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.warn('Error getting categories:', error);
+    return null;
+  }
+}
+
+export async function saveCategories(categories) {
+  try {
+    await AsyncStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+  } catch (error) {
+    console.error('Error saving categories:', error);
+  }
+}
 
 /**
  * Lightweight internal reader — skips preset-ID filtering.

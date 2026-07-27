@@ -13,18 +13,10 @@ import {
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
+import { useCategories } from '../context/CategoryContext';
 import { getLiveHKDExchangeRates } from '../services/currencyService';
 
-const CATEGORIES = [
-  'Food & Dining',
-  'Groceries',
-  'Transportation',
-  'Shopping',
-  'Utilities & Bills',
-  'Entertainment',
-  'Healthcare',
-  'Other',
-];
+
 
 const INITIAL_CURRENCY_OPTIONS = [
   { code: 'HKD', symbol: 'HKD', rate: 1.0, label: 'HKD' },
@@ -45,6 +37,7 @@ export default function ReceiptReviewModal({
   onCancel,
 }) {
   const { colors } = useTheme();
+  const { categories } = useCategories();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [showImage, setShowImage] = useState(false);
   const [merchant, setMerchant] = useState('');
@@ -175,7 +168,8 @@ export default function ReceiptReviewModal({
 
             <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>CATEGORY</Text>
             <View style={styles.categoryGrid}>
-              {CATEGORIES.map((cat) => {
+              {categories.map((catObj) => {
+                const cat = catObj.label;
                 const selected = cat === category;
                 return (
                   <TouchableOpacity

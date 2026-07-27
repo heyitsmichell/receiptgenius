@@ -15,26 +15,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
+import { useCategories } from '../context/CategoryContext';
 import ReceiptCard from '../components/ReceiptCard';
 import ReceiptEditModal from '../components/ReceiptEditModal';
 import CalendarPickerModal from '../components/CalendarPickerModal';
 import { getReceipts } from '../services/storageService';
 import { DATE_TIMEFRAMES, filterReceiptsByDate } from '../utils/dateFilters';
 
-const FILTER_CATEGORIES = [
-  'All',
-  'Food & Dining',
-  'Groceries',
-  'Transportation',
-  'Shopping',
-  'Utilities & Bills',
-  'Entertainment',
-  'Healthcare',
-  'Other',
-];
+
 
 export default function SpendingHistoryScreen() {
   const { colors } = useTheme();
+  const { categories } = useCategories();
+  const filterCategories = ['All', ...categories.map(c => c.label)];
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [receipts, setReceipts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,7 +176,7 @@ export default function SpendingHistoryScreen() {
 
             <Text style={[styles.accordionSectionTitle, { color: colors.onSurfaceVariant, marginTop: spacing.md }]}>Category</Text>
             <View style={styles.wrapContainer}>
-              {FILTER_CATEGORIES.map((cat) => {
+              {filterCategories.map((cat) => {
                 const selected = cat === selectedCategory;
                 return (
                   <TouchableOpacity

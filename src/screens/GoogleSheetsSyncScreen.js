@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
+import ManageCategoriesCard from '../components/ManageCategoriesCard';
 import {
   View,
   Text,
@@ -859,149 +860,151 @@ export default function GoogleSheetsSyncScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* REAL ONE-CLICK GOOGLE OAUTH SIGN IN CARD */}
-        <View style={[styles.googleAccountCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
-          <View style={styles.googleCardHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.googleCardTitle, { color: colors.onSurface }]}>
-                {googleUser.signedIn ? 'Cloud Save Connected' : 'Cloud Save'}
-              </Text>
-              {googleUser.signedIn && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                  <Text style={[styles.googleCardSubtitle, { marginTop: 0 }]}>Signed in as </Text>
-                  <TouchableOpacity activeOpacity={0.8} onPress={() => setEmailRevealed(!emailRevealed)}>
-                    {emailRevealed ? (
-                      <Text style={[styles.googleCardSubtitle, { marginTop: 0, color: colors.primary, fontWeight: '600' }]}>{googleUser.email}</Text>
-                    ) : (
-                      <View style={{ backgroundColor: colors.onSurfaceVariant, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 0 }}>
-                        <Text style={[styles.googleCardSubtitle, { marginTop: 0, color: colors.onSurfaceVariant, opacity: 0 }]}>{googleUser.email}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
+        {/* GOOGLE SHEETS SYNC SECTION */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Google Sheets Sync</Text>
           </View>
 
-          {googleUser.signedIn ? (
-            <View style={[styles.connectedBox, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}>
-              {googleUser.spreadsheetId ? (
-                <>
-                  <View style={styles.connectedRow}>
-                    <Text style={styles.connectedSheetIcon}>📗</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.connectedSheetTitle, { color: colors.onSurface }]}>{googleUser.spreadsheetTitle}</Text>
-                      <Text style={[styles.connectedSheetStatus, { color: colors.onSurfaceVariant }]}>
-                        Active • Live REST API v4 Syncing
-                      </Text>
+          <View style={[styles.sheetCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
+            
+            {/* OAUTH ACCOUNT SECTION */}
+            <View style={styles.googleCardHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.googleCardTitle, { color: colors.onSurface }]}>
+                  {googleUser.signedIn ? 'Cloud Save Connected' : 'Cloud Save'}
+                </Text>
+                {googleUser.signedIn && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                    <Text style={[styles.googleCardSubtitle, { marginTop: 0 }]}>Signed in as </Text>
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => setEmailRevealed(!emailRevealed)}>
+                      {emailRevealed ? (
+                        <Text style={[styles.googleCardSubtitle, { marginTop: 0, color: colors.primary, fontWeight: '600' }]}>{googleUser.email}</Text>
+                      ) : (
+                        <View style={{ backgroundColor: colors.onSurfaceVariant, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 0 }}>
+                          <Text style={[styles.googleCardSubtitle, { marginTop: 0, color: colors.onSurfaceVariant, opacity: 0 }]}>{googleUser.email}</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {googleUser.signedIn ? (
+              <View style={[styles.connectedBox, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}>
+                {googleUser.spreadsheetId ? (
+                  <>
+                    <View style={styles.connectedRow}>
+                      <Text style={styles.connectedSheetIcon}>📗</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.connectedSheetTitle, { color: colors.onSurface }]}>{googleUser.spreadsheetTitle}</Text>
+                        <Text style={[styles.connectedSheetStatus, { color: colors.onSurfaceVariant }]}>
+                          Active • Live REST API v4 Syncing
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.openSheetButton, { backgroundColor: colors.surfaceHighest }]}
+                        onPress={() => Linking.openURL(googleUser.spreadsheetUrl)}
+                      >
+                        <Text style={[styles.openSheetButtonText, { color: colors.onSurface }]}>Open Sheet ↗</Text>
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity
-                      style={[styles.openSheetButton, { backgroundColor: colors.surfaceHighest }]}
-                      onPress={() => Linking.openURL(googleUser.spreadsheetUrl)}
-                    >
-                      <Text style={[styles.openSheetButtonText, { color: colors.onSurface }]}>Open Sheet ↗</Text>
-                    </TouchableOpacity>
-                  </View>
 
-                  <View style={styles.googleCardActions}>
-                    <TouchableOpacity
-                      style={styles.switchSheetButton}
-                      onPress={() => {
-                        setGoogleModalVisible(true);
-                        handleBrowseDriveSheets();
-                      }}
-                    >
-                      <Text style={styles.switchSheetButtonText}>Switch Sheet</Text>
-                    </TouchableOpacity>
+                    <View style={styles.googleCardActions}>
+                      <TouchableOpacity
+                        style={styles.switchSheetButton}
+                        onPress={() => {
+                          setGoogleModalVisible(true);
+                          handleBrowseDriveSheets();
+                        }}
+                      >
+                        <Text style={styles.switchSheetButtonText}>Switch Sheet</Text>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={styles.disconnectButton}
-                      onPress={handleUnlinkSheet}
-                    >
-                      <Text style={styles.disconnectButtonText}>Unlink Sheet</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              ) : (
-                <View style={{ paddingVertical: spacing.sm }}>
-                  <Text style={{ fontSize: 13, color: colors.onSurfaceVariant, marginBottom: spacing.md }}>
-                    No spreadsheet linked yet. Pick one from your Drive or create a new one to start syncing!
-                  </Text>
+                      <TouchableOpacity
+                        style={styles.disconnectButton}
+                        onPress={handleUnlinkSheet}
+                      >
+                        <Text style={styles.disconnectButtonText}>Unlink</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
                   <TouchableOpacity
-                    style={[styles.twoWaySyncButton, { backgroundColor: colors.primary }]}
+                    style={[styles.linkSheetButton, { backgroundColor: colors.primary }]}
                     onPress={() => {
                       setGoogleModalVisible(true);
                       handleBrowseDriveSheets();
                     }}
                   >
-                    <Text style={styles.twoWaySyncButtonText}>
-                      Choose or Create Google Sheet
-                    </Text>
+                    <Text style={[styles.linkSheetButtonText, { color: '#ffffff' }]}>Link a Google Sheet to sync receipts</Text>
                   </TouchableOpacity>
-                </View>
-              )}
+                )}
 
-              <View style={{ marginTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.surfaceHighest, paddingTop: spacing.md, alignItems: 'center' }}>
-                <TouchableOpacity 
-                  onPress={handleGoogleSignOut}
-                  style={{ paddingVertical: 8, paddingHorizontal: 16, backgroundColor: colors.surfaceHighest, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.outlineVariant }}
-                >
+                <TouchableOpacity style={styles.signOutButton} onPress={handleGoogleSignOut}>
                   <Text style={{ fontSize: 13, color: colors.onSurface, fontWeight: '600' }}>
                     Sign Out
                   </Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[styles.googleSignInButton, { backgroundColor: colors.surfaceHigh, borderWidth: 1.5, borderColor: colors.outline }]}
-              onPress={handleGoogleLoginOnly}
-            >
-              <Text style={styles.googleSignInIcon}>G</Text>
-              <Text style={[styles.googleSignInText, { color: colors.onSurface }]}>Sign in with Google Account</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Integration Settings Card */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardHeaderLeft}>
-              <View>
-                <Text style={[styles.cardTitle, { color: colors.onSurface }]}>Auto-Sync Receipts</Text>
-              </View>
-            </View>
-
-            <Switch
-              value={autoSync}
-              onValueChange={handleToggleAutoSync}
-              trackColor={{ false: colors.surfaceHighest, true: colors.primary }}
-              thumbColor={autoSync ? '#ffffff' : colors.onSurfaceVariant}
-            />
-          </View>
-
-          <View style={styles.cardFooter}>
-            <Text style={[styles.lastSyncedText, { color: colors.onSurfaceVariant }]}>Last synced: {lastSynced}</Text>
-
-            <View style={styles.syncButtonsRow}>
+            ) : (
               <TouchableOpacity
-                style={[styles.twoWaySyncButton, { backgroundColor: colors.primary }]}
-                onPress={handleTwoWaySync}
-                disabled={syncing}
+                style={[styles.googleSignInButton, { backgroundColor: colors.surfaceHigh, borderWidth: 1.5, borderColor: colors.outline }]}
+                onPress={handleGoogleLoginOnly}
               >
-                <Text style={styles.twoWaySyncButtonText}>
-                  {syncing ? 'Syncing...' : 'Sync with Google Sheets'}
-                </Text>
+                <Text style={styles.googleSignInIcon}>G</Text>
+                <Text style={[styles.googleSignInText, { color: colors.onSurface }]}>Sign in with Google Account</Text>
               </TouchableOpacity>
-            </View>
+            )}
+
+            {/* AUTO SYNC SETTINGS SECTION (IF CONNECTED) */}
+            {googleUser && googleUser.spreadsheetId && (
+              <>
+                <View style={{ height: 1, width: '100%', backgroundColor: colors.surfaceHighest, marginTop: spacing.lg, marginBottom: spacing.md }} />
+                
+                <View style={[styles.cardHeader, { borderBottomWidth: 0, paddingBottom: 0, marginBottom: spacing.xs }]}>
+                  <View style={styles.cardHeaderLeft}>
+                    <View>
+                      <Text style={[styles.cardTitle, { color: colors.onSurface }]}>Auto-Sync Receipts</Text>
+                    </View>
+                  </View>
+
+                  <Switch
+                    value={autoSync}
+                    onValueChange={handleToggleAutoSync}
+                    trackColor={{ false: colors.surfaceHighest, true: colors.primary }}
+                    thumbColor={autoSync ? '#ffffff' : colors.onSurfaceVariant}
+                  />
+                </View>
+
+                <View style={styles.cardFooter}>
+                  <Text style={[styles.lastSyncedText, { color: colors.onSurfaceVariant }]}>Last synced: {lastSynced}</Text>
+
+                  <View style={styles.syncButtonsRow}>
+                    <TouchableOpacity
+                      style={[styles.twoWaySyncButton, { backgroundColor: colors.primary }]}
+                      onPress={handleTwoWaySync}
+                      disabled={syncing}
+                    >
+                      <Text style={styles.twoWaySyncButtonText}>
+                        {syncing ? 'Syncing...' : 'Sync with Google Sheets'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </>
+            )}
+
           </View>
         </View>
+
+        <ManageCategoriesCard />
 
         {/* Local Device Backup & File Export */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Device Local Backup</Text>
-            <Text style={[styles.sectionBadgeText, { color: colors.onSurfaceVariant, backgroundColor: colors.surfaceHighest }]}>Offline Export</Text>
           </View>
 
           <View style={[styles.sheetCard, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest }]}>
@@ -1228,31 +1231,20 @@ export default function GoogleSheetsSyncScreen() {
         {/* HARD RESET CONFIRMATION MODAL */}
         <Modal visible={hardResetModalVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.error, borderWidth: 1 }]}>
-              <View style={{ alignItems: 'center', marginBottom: 4 }}>
-                <Text style={[styles.modalTitle, { color: colors.error, marginTop: 4 }]}>Hard Reset</Text>
-                <Text style={[styles.modalSubtitle, { color: colors.onSurfaceVariant, textAlign: 'center', marginBottom: 0 }]}>
-                  Are you sure you want to completely wipe all your data? This cannot be undone.
-                </Text>
-              </View>
+            <View style={[styles.hardResetModalContent, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}>
+              <Text style={[styles.hardResetModalTitle, { color: colors.error }]}>Hard Reset</Text>
+              
+              <Text style={[styles.hardResetWarningText, { color: colors.onSurfaceVariant }]}>
+                Are you sure you want to completely wipe all your data? This cannot be undone.
+              </Text>
 
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={styles.modalCancelButton}
-                  onPress={() => setHardResetModalVisible(false)}
-                >
-                  <Text style={styles.modalCancelText}>Cancel</Text>
+              <View style={styles.hardResetModalActions}>
+                <TouchableOpacity style={styles.hardResetModalCancelBtn} onPress={() => setHardResetModalVisible(false)}>
+                  <Text style={[styles.hardResetModalCancelBtnText, { color: colors.onSurfaceVariant }]}>Cancel</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[
-                    styles.googleModalAuthButton,
-                    { 
-                      backgroundColor: colors.errorContainer, 
-                      borderColor: colors.error, 
-                      borderWidth: 1 
-                    }
-                  ]}
+                  style={[styles.hardResetModalSaveBtn, { backgroundColor: colors.error }]}
                   onPress={async () => {
                     const { clearAllData } = require('../services/storageService');
                     await clearAllData();
@@ -1265,7 +1257,7 @@ export default function GoogleSheetsSyncScreen() {
                     }
                   }}
                 >
-                  <Text style={[styles.googleModalAuthText, { color: colors.error }]}>Wipe Everything</Text>
+                  <Text style={[styles.hardResetModalSaveBtnText, { color: '#FFFFFF' }]}>Wipe Everything</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1620,6 +1612,16 @@ function createStyles(colors) {
     color: colors.error,
     fontSize: 13,
     fontWeight: '600',
+  },
+  signOutButton: {
+    marginTop: spacing.md,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: colors.surfaceHighest,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    alignItems: 'center',
   },
   card: {
     backgroundColor: colors.surface,
@@ -2172,6 +2174,44 @@ function createStyles(colors) {
   wrapChipText: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  hardResetModalContent: {
+    width: '100%',
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    padding: spacing.lg,
+  },
+  hardResetModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: spacing.lg,
+  },
+  hardResetWarningText: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: spacing.xl,
+  },
+  hardResetModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.md,
+  },
+  hardResetModalCancelBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  hardResetModalCancelBtnText: {
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  hardResetModalSaveBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: borderRadius.md,
+  },
+  hardResetModalSaveBtnText: {
+    fontWeight: '700',
+    fontSize: 16,
   },
   });
 }
