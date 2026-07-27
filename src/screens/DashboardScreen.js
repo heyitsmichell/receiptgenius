@@ -43,7 +43,7 @@ const CURRENCY_INFO = {
 const AVAILABLE_CURRENCIES = ['HKD', 'USD', 'CNY', 'JPY', 'EUR', 'GBP', 'SGD'];
 
 export default function DashboardScreen({ navigation }) {
-  const { isDark, toggleTheme, colors } = useTheme();
+  const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [receipts, setReceipts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -150,12 +150,7 @@ export default function DashboardScreen({ navigation }) {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
 
-              <TouchableOpacity
-                style={[styles.themeToggleBtn, { backgroundColor: colors.surfaceHigh, borderColor: colors.surfaceHighest }]}
-                onPress={toggleTheme}
-              >
-                <Ionicons name={isDark ? 'sunny' : 'moon'} size={20} color={isDark ? '#fbbf24' : '#64748b'} />
-              </TouchableOpacity>
+
 
               <TouchableOpacity 
                 style={[styles.scanHeaderButton, { backgroundColor: colors.primary }]}
@@ -385,16 +380,7 @@ function createStyles(colors) {
     color: colors.onSurfaceVariant,
     marginTop: 2,
   },
-  themeToggleBtn: {
-    backgroundColor: colors.surfaceHigh,
-    width: 38,
-    height: 38,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.surfaceHighest,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
   scanHeaderButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: 16,

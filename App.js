@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import * as WebBrowser from 'expo-web-browser';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, borderRadius } from './src/theme/theme';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -21,6 +22,8 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import ScanReceiptScreen from './src/screens/ScanReceiptScreen';
 import SpendingHistoryScreen from './src/screens/SpendingHistoryScreen';
 import GoogleSheetsSyncScreen from './src/screens/GoogleSheetsSyncScreen';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const Tab = createBottomTabNavigator();
 
@@ -148,8 +151,8 @@ function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
                 iconName = focused ? 'camera' : 'camera-outline';
               } else if (route.name === 'History') {
                 iconName = focused ? 'receipt' : 'receipt-outline';
-              } else if (route.name === 'SheetsSync') {
-                iconName = focused ? 'sync-circle' : 'sync-circle-outline';
+              } else if (route.name === 'Settings') {
+                iconName = focused ? 'settings' : 'settings-outline';
               }
               return <Ionicons name={iconName} size={22} color={color} />;
             },
@@ -189,10 +192,10 @@ function NativeAppContent({ isOfflineFallback, onRetryOnline }) {
             }}
           />
           <Tab.Screen
-            name="SheetsSync"
+            name="Settings"
             component={GoogleSheetsSyncScreen}
             options={{
-              tabBarLabel: 'Sync',
+              tabBarLabel: 'Settings',
             }}
           />
         </Tab.Navigator>

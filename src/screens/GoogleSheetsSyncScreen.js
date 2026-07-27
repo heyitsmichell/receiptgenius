@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   View,
   Text,
@@ -49,7 +50,7 @@ import {
 } from '../services/googleOAuthSheetsService';
 
 export default function GoogleSheetsSyncScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, toggleTheme } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -173,9 +174,12 @@ export default function GoogleSheetsSyncScreen() {
     }
   };
 
-  const handleGoogleLoginOnly = () => {
-    setOauthLoading(true);
-    promptAsync();
+  const handleGoogleLoginOnly = async () => {
+    try {
+      await promptAsync();
+    } catch (e) {
+      console.warn('Login popup failed', e);
+    }
   };
 
   const handleLinkOrCreateSheet = async () => {
@@ -843,14 +847,16 @@ export default function GoogleSheetsSyncScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Section */}
         <View style={styles.headerRow}>
           <View style={styles.headerTextCol}>
-            <Text style={[styles.title, { color: colors.onSurface }]}>Google Sheets Integration</Text>
-            <Text style={styles.subtitle}>
-              Manage your automated receipt exports and connected spreadsheets.
-            </Text>
+            <Text style={[styles.title, { color: colors.onSurface }]}>Settings</Text>
           </View>
+          <TouchableOpacity
+            style={styles.themeToggleBtn}
+            onPress={toggleTheme}
+          >
+            <Ionicons name={isDark ? 'sunny' : 'moon'} size={20} color={isDark ? '#fbbf24' : '#64748b'} />
+          </TouchableOpacity>
         </View>
 
         {/* REAL ONE-CLICK GOOGLE OAUTH SIGN IN CARD */}
@@ -922,14 +928,14 @@ export default function GoogleSheetsSyncScreen() {
                     No spreadsheet linked yet. Pick one from your Drive or create a new one to start syncing!
                   </Text>
                   <TouchableOpacity
-                    style={[styles.switchSheetButton, { backgroundColor: colors.primary }]}
+                    style={[styles.twoWaySyncButton, { backgroundColor: colors.primary }]}
                     onPress={() => {
                       setGoogleModalVisible(true);
                       handleBrowseDriveSheets();
                     }}
                   >
-                    <Text style={[styles.switchSheetButtonText, { color: '#003824', textAlign: 'center' }]}>
-                      📂 Choose or Create Google Sheet
+                    <Text style={styles.twoWaySyncButtonText}>
+                      Choose or Create Google Sheet
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1271,9 +1277,6 @@ export default function GoogleSheetsSyncScreen() {
           <View style={styles.modalOverlay}>
             <View style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.surfaceHighest, maxHeight: '85%' }]}>
               <View style={styles.googleModalTop}>
-                <View style={styles.googleLogoCircleLarge}>
-                  <Text style={styles.googleLogoGLarge}>G</Text>
-                </View>
                 <Text style={[styles.modalTitle, { color: colors.onSurface }]}>Choose Spreadsheet</Text>
                 <Text style={[styles.modalSubtitle, { color: colors.onSurfaceVariant }]}>
                   Choose whether to link an existing spreadsheet from your Google Drive or create a brand new one.
@@ -1296,7 +1299,7 @@ export default function GoogleSheetsSyncScreen() {
                       googleModalMode === 'link' && { color: colors.primary, fontWeight: '700' },
                     ]}
                   >
-                    🔗 Link Existing Sheet
+                    Link Existing Sheet
                   </Text>
                 </TouchableOpacity>
 
@@ -1314,7 +1317,7 @@ export default function GoogleSheetsSyncScreen() {
                       googleModalMode === 'create' && { color: colors.primary, fontWeight: '700' },
                     ]}
                   >
-                    ✨ Create New Sheet
+                    Create New Sheet
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1325,7 +1328,7 @@ export default function GoogleSheetsSyncScreen() {
                     <View style={{ marginBottom: spacing.md }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
                         <Text style={[styles.inputLabel, { marginBottom: 0 }]}>
-                          📂 Pick from your Google Drive:
+                          Pick from your Google Drive:
                         </Text>
                         <TouchableOpacity
                           onPress={() => handleBrowseDriveSheets()}
@@ -1475,6 +1478,16 @@ function createStyles(colors) {
     alignItems: 'center',
     marginBottom: spacing.lg,
     marginTop: spacing.sm,
+  },
+  themeToggleBtn: {
+    backgroundColor: colors.surfaceHigh,
+    width: 38,
+    height: 38,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.surfaceHighest,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTextCol: {
     flex: 1,
