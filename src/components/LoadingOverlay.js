@@ -21,7 +21,7 @@ export default function LoadingOverlay({ visible, stage = 'Processing receipt...
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(11, 19, 38, 0.85)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,

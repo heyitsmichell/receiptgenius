@@ -432,12 +432,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveBtnText: {
-    color: '#0D1117',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
   deleteBtn: {
-    backgroundColor: 'rgba(255, 107, 107, 0.15)',
+    backgroundColor: colors.errorContainer,
     borderWidth: 1,
     borderColor: colors.error,
     paddingVertical: 14,
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   confirmBox: {
-    backgroundColor: 'rgba(255, 107, 107, 0.12)',
+    backgroundColor: colors.errorContainer,
     borderWidth: 1,
     borderColor: colors.error,
     padding: 14,

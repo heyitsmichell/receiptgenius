@@ -244,15 +244,15 @@ export default function ReceiptReviewModal({
             {selectedCurr !== 'HKD' ? (
               <View
                 style={{
-                  backgroundColor: 'rgba(78, 222, 163, 0.12)',
+                  backgroundColor: colors.primaryContainer,
                   padding: 10,
                   borderRadius: 8,
                   marginBottom: 12,
                   borderWidth: 1,
-                  borderColor: 'rgba(78, 222, 163, 0.3)',
+                  borderColor: colors.primary,
                 }}
               >
-                <Text style={{ color: '#4edea3', fontSize: 12, fontWeight: '600' }}>
+                <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>
                   Auto-converts {selectedCurr} to HKD upon saving (Rate: ~
                   {
                     currencyOptions.find((c) => c.code === selectedCurr)?.rate
@@ -307,7 +307,7 @@ export default function ReceiptReviewModal({
 const styles = StyleSheet.create({
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(11, 19, 38, 0.9)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'flex-end',
   },
   modalContent: {

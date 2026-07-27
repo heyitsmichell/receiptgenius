@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   currencyOptionItemSelected: {
-    backgroundColor: 'rgba(78, 222, 163, 0.12)',
+    backgroundColor: colors.primaryContainer,
     borderColor: colors.primary,
   },
   currencyOptionLeft: {

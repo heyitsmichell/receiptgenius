@@ -1086,7 +1086,7 @@ export default function GoogleSheetsSyncScreen() {
                   </View>
                   {(customStart !== '' || customEnd !== '') && (
                     <TouchableOpacity
-                      style={[styles.customDateClearBtn, { backgroundColor: isDark ? 'rgba(255, 100, 100, 0.15)' : 'rgba(239, 68, 68, 0.15)', borderColor: colors.error }]}
+                      style={[styles.customDateClearBtn, { backgroundColor: colors.errorContainer, borderColor: colors.error }]}
                       onPress={() => {
                         setCustomStart('');
                         setCustomEnd('');
@@ -1104,8 +1104,8 @@ export default function GoogleSheetsSyncScreen() {
                 style={[
                   styles.backupExportButton,
                   {
-                    backgroundColor: isDark ? 'rgba(96, 165, 250, 0.15)' : 'rgba(37, 99, 235, 0.12)',
-                    borderColor: isDark ? 'rgba(96, 165, 250, 0.4)' : 'rgba(37, 99, 235, 0.4)',
+                    backgroundColor: colors.surfaceHigh,
+                    borderColor: colors.outlineVariant,
                     justifyContent: 'center',
                   }
                 ]}
@@ -1120,8 +1120,8 @@ export default function GoogleSheetsSyncScreen() {
                 style={[
                   styles.backupExportButton,
                   {
-                    backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                    borderColor: isDark ? 'rgba(52, 211, 153, 0.4)' : 'rgba(16, 185, 129, 0.5)',
+                    backgroundColor: colors.surfaceHigh,
+                    borderColor: colors.outlineVariant,
                     justifyContent: 'center',
                   }
                 ]}
@@ -1148,8 +1148,8 @@ export default function GoogleSheetsSyncScreen() {
                     styles.backupExportButton,
                     {
                       width: '100%',
-                      backgroundColor: isDark ? 'rgba(168, 85, 247, 0.15)' : 'rgba(147, 51, 234, 0.12)',
-                      borderColor: isDark ? 'rgba(168, 85, 247, 0.4)' : 'rgba(147, 51, 234, 0.4)',
+                      backgroundColor: colors.surfaceHigh,
+                      borderColor: colors.outlineVariant,
                       justifyContent: 'center',
                     }
                   ]}
@@ -1241,7 +1241,7 @@ export default function GoogleSheetsSyncScreen() {
                   style={[
                     styles.googleModalAuthButton,
                     { 
-                      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(220, 38, 38, 0.08)', 
+                      backgroundColor: colors.errorContainer, 
                       borderColor: colors.error, 
                       borderWidth: 1 
                     }
@@ -1488,11 +1488,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   googleAccountCard: {
-    backgroundColor: 'rgba(23, 31, 51, 0.8)',
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(78, 222, 163, 0.35)',
+    borderColor: colors.primary,
     marginBottom: spacing.lg,
   },
   googleCardHeader: {
@@ -1701,7 +1701,7 @@ const styles = StyleSheet.create({
     borderColor: colors.surfaceHighest,
   },
   timeframeChipSelected: {
-    backgroundColor: 'rgba(0, 255, 163, 0.12)',
+    backgroundColor: colors.primaryContainer,
     borderColor: colors.primary,
   },
   timeframeChipText: {
@@ -1751,12 +1751,12 @@ const styles = StyleSheet.create({
   },
   customDateClearBtn: {
     marginTop: 14,
-    backgroundColor: 'rgba(255, 100, 100, 0.15)',
+    backgroundColor: colors.errorContainer,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 100, 100, 0.3)',
+    borderColor: colors.error,
   },
   customDateClearText: {
     color: '#ff6b6b',
@@ -1815,7 +1815,7 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
   },
   activeBadge: {
-    backgroundColor: 'rgba(78,222,163,0.15)',
+    backgroundColor: colors.primaryContainer,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: borderRadius.sm,
@@ -1871,10 +1871,10 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   successCircle: {
-    backgroundColor: 'rgba(78,222,163,0.15)',
+    backgroundColor: colors.primaryContainer,
   },
   errorCircle: {
-    backgroundColor: 'rgba(255,180,171,0.15)',
+    backgroundColor: colors.errorContainer,
   },
   statusIcon: {
     fontSize: 16,
@@ -1898,7 +1898,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
@@ -2095,12 +2095,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   backupCsvButton: {
-    backgroundColor: 'rgba(52, 211, 153, 0.12)',
-    borderColor: 'rgba(52, 211, 153, 0.3)',
+    backgroundColor: colors.surfaceHigh,
+    borderColor: colors.outlineVariant,
   },
   backupJsonButton: {
-    backgroundColor: 'rgba(96, 165, 250, 0.12)',
-    borderColor: 'rgba(96, 165, 250, 0.3)',
+    backgroundColor: colors.surfaceHigh,
+    borderColor: colors.outlineVariant,
   },
   backupExportIconText: {
     fontSize: 24,

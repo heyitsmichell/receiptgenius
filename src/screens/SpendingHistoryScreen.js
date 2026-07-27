@@ -436,15 +436,15 @@ const styles = StyleSheet.create({
   },
   customDateClearBtn: {
     marginTop: 14,
-    backgroundColor: 'rgba(255, 100, 100, 0.15)',
+    backgroundColor: colors.errorContainer,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 100, 100, 0.3)',
+    borderColor: colors.error,
   },
   customDateClearText: {
-    color: '#ff6b6b',
+    color: colors.error,
     fontSize: 13,
     fontWeight: '700',
   },
