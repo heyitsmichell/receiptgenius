@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -45,6 +45,7 @@ export default function ReceiptReviewModal({
   onCancel,
 }) {
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [showImage, setShowImage] = useState(false);
   const [merchant, setMerchant] = useState('');
   const [date, setDate] = useState('');
@@ -304,7 +305,8 @@ export default function ReceiptReviewModal({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -437,4 +439,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     borderRadius: borderRadius.md,
   },
-});
+  });
+}

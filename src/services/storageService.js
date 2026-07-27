@@ -12,6 +12,22 @@ const INITIAL_SAMPLE_RECEIPTS = [];
 
 const PRESET_RECEIPT_IDS = ['REC-1001', 'REC-1002', 'REC-1003', 'REC-1004'];
 
+/**
+ * Lightweight internal reader — skips preset-ID filtering.
+ * Use this inside other storage mutations to avoid redundant parse+write cycles.
+ */
+async function getRawReceipts() {
+  try {
+    const data = await AsyncStorage.getItem(RECEIPTS_KEY);
+    if (!data) return [];
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn('Error fetching raw receipts:', error);
+    return [];
+  }
+}
+
 export async function getReceipts() {
   try {
     const data = await AsyncStorage.getItem(RECEIPTS_KEY);
@@ -66,7 +82,7 @@ export async function clearAllData() {
 
 export async function saveReceipt(newReceipt) {
   try {
-    const existing = await getReceipts();
+    const existing = await getRawReceipts();
     const updated = [newReceipt, ...existing.filter(r => r.id !== newReceipt.id)];
     await AsyncStorage.setItem(RECEIPTS_KEY, JSON.stringify(updated));
     return updated;
@@ -88,7 +104,7 @@ export async function saveReceipts(receipts) {
 
 export async function deleteReceipt(id) {
   try {
-    const existing = await getReceipts();
+    const existing = await getRawReceipts();
     const updated = existing.filter((r) => r.id !== id);
     await AsyncStorage.setItem(RECEIPTS_KEY, JSON.stringify(updated));
     return updated;
@@ -100,7 +116,7 @@ export async function deleteReceipt(id) {
 
 export async function updateReceiptSyncStatus(id, status) {
   try {
-    const existing = await getReceipts();
+    const existing = await getRawReceipts();
     const updated = existing.map(r => r.id === id ? { ...r, syncStatus: status } : r);
     await AsyncStorage.setItem(RECEIPTS_KEY, JSON.stringify(updated));
     return updated;

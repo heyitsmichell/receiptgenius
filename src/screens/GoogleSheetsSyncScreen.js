@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -50,6 +50,7 @@ import {
 
 export default function GoogleSheetsSyncScreen() {
   const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
@@ -1455,7 +1456,8 @@ export default function GoogleSheetsSyncScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -2158,4 +2160,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-});
+  });
+}

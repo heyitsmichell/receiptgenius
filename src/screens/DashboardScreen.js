@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -44,6 +44,7 @@ const AVAILABLE_CURRENCIES = ['HKD', 'USD', 'CNY', 'JPY', 'EUR', 'GBP', 'SGD'];
 
 export default function DashboardScreen({ navigation }) {
   const { isDark, toggleTheme, colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [receipts, setReceipts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
@@ -97,27 +98,37 @@ export default function DashboardScreen({ navigation }) {
   };
 
   // Compute Total Spend in HKD
-  const totalSpendHKD = receipts.reduce(
-    (sum, r) => sum + Number(r.totalAmount || 0),
-    0
+  const totalSpendHKD = useMemo(() =>
+    receipts.reduce((sum, r) => sum + Number(r.totalAmount || 0), 0),
+    [receipts]
   );
 
   // Convert to displayCurrency (rates are HKD per 1 unit of foreign currency)
-  const rate = fxRates[displayCurrency] || 1.0;
-  const convertedTotal =
-    displayCurrency === 'HKD' ? totalSpendHKD : totalSpendHKD / rate;
+  const convertedTotal = useMemo(() => {
+    const rate = fxRates[displayCurrency] || 1.0;
+    return displayCurrency === 'HKD' ? totalSpendHKD : totalSpendHKD / rate;
+  }, [totalSpendHKD, fxRates, displayCurrency]);
 
   // Compute Category Breakdown
-  const categoryBreakdown = receipts.reduce((acc, r) => {
-    const cat = r.category || 'Other';
-    acc[cat] = (acc[cat] || 0) + Number(r.totalAmount || 0);
-    return acc;
-  }, {});
+  const categoryBreakdown = useMemo(() =>
+    receipts.reduce((acc, r) => {
+      const cat = r.category || 'Other';
+      acc[cat] = (acc[cat] || 0) + Number(r.totalAmount || 0);
+      return acc;
+    }, {}),
+    [receipts]
+  );
 
-  const syncedCount = receipts.filter(
-    (r) => r.syncStatus === 'synced' || r.syncedToSheets
-  ).length;
-  const pendingCount = receipts.length - syncedCount;
+  const { syncedCount, pendingCount } = useMemo(() => {
+    const synced = receipts.filter(
+      (r) => r.syncStatus === 'synced' || r.syncedToSheets
+    ).length;
+    return { syncedCount: synced, pendingCount: receipts.length - synced };
+  }, [receipts]);
+
+  const handleSelectReceipt = useCallback((receipt) => {
+    setSelectedReceipt(receipt);
+  }, []);
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -227,7 +238,7 @@ export default function DashboardScreen({ navigation }) {
           <ReceiptCard
             key={receipt.id}
             receipt={receipt}
-            onPress={() => setSelectedReceipt(receipt)}
+            onPress={handleSelectReceipt}
           />
         ))}
       </ScrollView>
@@ -343,7 +354,8 @@ export default function DashboardScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -623,4 +635,5 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0D1117',
   },
-});
+  });
+}

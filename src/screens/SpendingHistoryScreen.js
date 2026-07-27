@@ -35,6 +35,7 @@ const FILTER_CATEGORIES = [
 
 export default function SpendingHistoryScreen() {
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [receipts, setReceipts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -307,7 +308,8 @@ export default function SpendingHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -505,4 +507,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-});
+  });
+}

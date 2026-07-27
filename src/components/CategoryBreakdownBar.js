@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
 
 export default function CategoryBreakdownBar({ categoryBreakdown, totalSpend }) {
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const categories = Object.keys(categoryBreakdown || {});
 
   if (categories.length === 0 || !totalSpend) {
@@ -71,7 +72,8 @@ export default function CategoryBreakdownBar({ categoryBreakdown, totalSpend }) 
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
@@ -141,4 +143,5 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     fontSize: 14,
   },
-});
+  });
+}

@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Modal } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function LoadingOverlay({ visible, stage = 'Processing receipt...' }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   if (!visible) return null;
 
   return (
@@ -18,7 +22,8 @@ export default function LoadingOverlay({ visible, stage = 'Processing receipt...
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.65)',
@@ -47,4 +52,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     textAlign: 'center',
   },
-});
+  });
+}

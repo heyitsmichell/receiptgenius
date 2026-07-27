@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
 
 const ReceiptCard = React.memo(function ReceiptCard({ receipt, onPress }) {
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const categoryColor = colors.categories[receipt.category] || colors.primary;
   const isSynced = receipt.syncStatus === 'synced' || receipt.syncedToSheets;
 
@@ -62,7 +63,8 @@ const ReceiptCard = React.memo(function ReceiptCard({ receipt, onPress }) {
 
 export default ReceiptCard;
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
@@ -137,4 +139,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-});
+  });
+}
