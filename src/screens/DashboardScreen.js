@@ -361,6 +361,7 @@ function createStyles(colors) {
   },
   contentContainer: {
     padding: spacing.md,
+    paddingTop: Platform.OS === 'ios' ? spacing.md : 0,
     paddingBottom: spacing.xxl,
   },
   header: {
@@ -368,7 +369,7 @@ function createStyles(colors) {
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.lg,
-    marginTop: spacing.sm,
+    marginTop: Platform.OS === 'ios' ? spacing.sm : 0,
   },
   appTitle: {
     fontSize: 24,

@@ -49,6 +49,12 @@
           "photosPermission": "Allow ReceiptGenius to access your photos to select receipt images."
         }
       ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.1090639889222-61nj8se7kosnlg023o1r63bokud9c5nu"
+        }
+      ],
       "expo-web-browser",
       "expo-font"
     ],

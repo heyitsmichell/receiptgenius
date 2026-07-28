@@ -1,9 +1,6 @@
 import { Platform } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { CONFIG } from '../config/config';
-
-WebBrowser.maybeCompleteAuthSession();
 
 const SHEETS_SCOPE =
   'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
@@ -58,15 +55,11 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
  */
 export async function requestGoogleAccessToken() {
   if (Platform.OS !== 'web') {
-    // Native Mobile (Android / iOS) using expo-auth-session & system browser
+    // Native Mobile (Android / iOS) using native Google Sign-in popup
     try {
-      const redirectUri = AuthSession.makeRedirectUri({
-        scheme: 'receiptgenius',
-      });
-      console.log('Mobile OAuth Redirect URI:', redirectUri);
-
-      const authRequest = new AuthSession.AuthRequest({
-        clientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
+      GoogleSignin.configure({
+        webClientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
+        iosClientId: CONFIG.GOOGLE_IOS_CLIENT_ID,
         scopes: [
           'https://www.googleapis.com/auth/spreadsheets',
           'https://www.googleapis.com/auth/drive.readonly',
@@ -74,21 +67,26 @@ export async function requestGoogleAccessToken() {
           'https://www.googleapis.com/auth/userinfo.email',
           'https://www.googleapis.com/auth/userinfo.profile',
         ],
-        redirectUri,
-        responseType: AuthSession.ResponseType.Token,
       });
 
-      const result = await authRequest.promptAsync(GOOGLE_DISCOVERY);
-      if (
-        result.type === 'success' &&
-        (result.authentication?.accessToken || result.params?.access_token)
-      ) {
-        return result.authentication?.accessToken || result.params.access_token;
+      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+      
+      if (tokens && tokens.accessToken) {
+        return tokens.accessToken;
       } else {
-        throw new Error('Google Sign-In was cancelled or failed on mobile.');
+        throw new Error('Google Sign-In completed, but no access token was returned.');
       }
     } catch (err) {
-      console.error('Mobile Google OAuth Error:', err);
+      console.error('Native Google OAuth Error:', err);
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        throw new Error('Google Sign-In was cancelled.');
+      } else if (err.code === statusCodes.IN_PROGRESS) {
+        throw new Error('Google Sign-In is already in progress.');
+      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        throw new Error('Google Play Services not available or outdated.');
+      }
       throw new Error(err?.message || 'Failed to authenticate on mobile.');
     }
   }

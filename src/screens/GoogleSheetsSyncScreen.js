@@ -20,10 +20,6 @@ import {
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-
-WebBrowser.maybeCompleteAuthSession();
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -53,26 +49,6 @@ import {
 export default function GoogleSheetsSyncScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
-    webClientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
-    iosClientId: CONFIG.GOOGLE_IOS_CLIENT_ID,
-    androidClientId: CONFIG.GOOGLE_IOS_CLIENT_ID, // Android Client IDs are blocked from browser Auth by Google, so we use the iOS Client ID which supports Custom URI Schemes!
-    redirectUri: Platform.OS === 'web'
-      ? (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8086')
-      : undefined,
-    extraParams: {
-      prompt: 'consent',
-    },
-    scopes: [
-      'https://www.googleapis.com/auth/spreadsheets',
-      'https://www.googleapis.com/auth/drive.readonly',
-      'https://www.googleapis.com/auth/drive.file',
-      'https://www.googleapis.com/auth/userinfo.email',
-      'https://www.googleapis.com/auth/userinfo.profile',
-    ],
-  });
 
   const [autoSync, setAutoSync] = useState(true);
   const [lastSynced, setLastSynced] = useState('Checking...');
@@ -136,17 +112,7 @@ export default function GoogleSheetsSyncScreen() {
     await saveSettings({ ...currentSettings, autoSync: value });
   };
 
-  useEffect(() => {
-    if (response?.type === 'success' && response.authentication?.accessToken) {
-      handleOAuthSuccess(response.authentication.accessToken);
-    } else if (response?.type === 'error' || (response && response.type !== 'success' && response.type !== 'dismiss')) {
-      Alert.alert('Google Sign-In Error', response.error?.message || 'Authentication failed or was cancelled.');
-      setOauthLoading(false);
-    } else if (response?.type === 'dismiss') {
-      setOauthLoading(false);
-    }
-  }, [response]);
-
+  // Removed AuthSession useEffect because we now use await requestGoogleAccessToken() directly!
   const handleOAuthSuccess = async (token) => {
     setOauthLoading(true);
     try {
@@ -176,10 +142,15 @@ export default function GoogleSheetsSyncScreen() {
   };
 
   const handleGoogleLoginOnly = async () => {
+    setOauthLoading(true);
     try {
-      await promptAsync();
+      const accessToken = await requestGoogleAccessToken();
+      await handleOAuthSuccess(accessToken);
     } catch (e) {
-      console.warn('Login popup failed', e);
+      if (e.message !== 'Google Sign-In was cancelled.') {
+        Alert.alert('Sign-In Failed', e.message);
+      }
+      setOauthLoading(false);
     }
   };
 
@@ -1460,8 +1431,9 @@ function createStyles(colors) {
   container: {
     flex: 1,
   },
-  content: {
+  contentContainer: {
     padding: spacing.md,
+    paddingTop: Platform.OS === 'ios' ? spacing.md : 0,
     paddingBottom: spacing.xl,
   },
   headerRow: {
@@ -1469,7 +1441,7 @@ function createStyles(colors) {
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.lg,
-    marginTop: spacing.sm,
+    marginTop: Platform.OS === 'ios' ? spacing.sm : 0,
   },
   themeToggleBtn: {
     backgroundColor: colors.surfaceHigh,
@@ -1729,6 +1701,12 @@ function createStyles(colors) {
   timeframeChipTextSelected: {
     color: colors.primary,
     fontWeight: '700',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    marginTop: Platform.OS === 'ios' ? spacing.sm : 0,
   },
   customDateRow: {
     flexDirection: 'row',
