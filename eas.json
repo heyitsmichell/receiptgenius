@@ -10,6 +10,7 @@
       "ios": {
         "simulator": true
       },
+      "channel": "development",
       "env": {
         "EXPO_PUBLIC_VERCEL_APP_URL": "https://receiptgenius-seven.vercel.app"
       }
@@ -19,6 +20,7 @@
       "android": {
         "buildType": "apk"
       },
+      "channel": "preview",
       "env": {
         "EXPO_PUBLIC_VERCEL_APP_URL": "https://receiptgenius-seven.vercel.app"
       }
@@ -27,6 +29,7 @@
       "android": {
         "buildType": "app-bundle"
       },
+      "channel": "production",
       "env": {
         "EXPO_PUBLIC_VERCEL_APP_URL": "https://receiptgenius-seven.vercel.app"
       }
