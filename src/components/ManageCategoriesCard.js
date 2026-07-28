@@ -5,6 +5,7 @@ import { useCategories } from '../context/CategoryContext';
 import { useTheme } from '../context/ThemeContext';
 import { getReceipts, saveReceipts } from '../services/storageService';
 import { colors, spacing, borderRadius } from '../theme/theme';
+import ColorPicker from 'react-native-wheel-color-picker';
 
 const PRESET_COLORS = [
   '#4edea3', '#38bdf8', '#f43f5e', '#a855f7', '#f97316', 
@@ -163,12 +164,28 @@ export default function ManageCategoriesCard() {
             </View>
 
             {showCustomColor && (
+              <View style={{ height: 280, marginBottom: spacing.lg }}>
+                <ColorPicker
+                  color={colorInput}
+                  onColorChange={(color) => setColorInput(color.toUpperCase())}
+                  thumbSize={30}
+                  sliderSize={30}
+                  noSnap={true}
+                  row={false}
+                  swatches={false}
+                />
+              </View>
+            )}
+
+            {showCustomColor && (
               <TextInput
-                style={[styles.input, { color: themeColors.onSurface, borderColor: themeColors.surfaceHighest, backgroundColor: themeColors.surface, marginTop: -spacing.md }]}
+                style={[styles.input, { color: themeColors.onSurface, borderColor: themeColors.surfaceHighest, backgroundColor: themeColors.surface, marginTop: spacing.md }]}
                 placeholder="#HEXCODE"
                 placeholderTextColor={themeColors.onSurfaceVariant}
                 value={colorInput}
-                onChangeText={setColorInput}
+                onChangeText={(text) => {
+                  setColorInput(text.toUpperCase());
+                }}
                 maxLength={7}
                 autoCapitalize="characters"
               />
