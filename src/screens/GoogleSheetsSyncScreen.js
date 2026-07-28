@@ -1433,7 +1433,7 @@ function createStyles(colors) {
   },
   contentContainer: {
     padding: spacing.md,
-    paddingTop: Platform.OS === 'ios' ? spacing.md : 0,
+    paddingTop: Platform.OS === 'android' ? 0 : spacing.md,
     paddingBottom: spacing.xl,
   },
   headerRow: {
@@ -1441,7 +1441,7 @@ function createStyles(colors) {
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.lg,
-    marginTop: Platform.OS === 'ios' ? spacing.sm : 0,
+    marginTop: Platform.OS === 'android' ? 0 : spacing.sm,
   },
   themeToggleBtn: {
     backgroundColor: colors.surfaceHigh,
@@ -1706,7 +1706,7 @@ function createStyles(colors) {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing.lg,
-    marginTop: Platform.OS === 'ios' ? spacing.sm : 0,
+    marginTop: Platform.OS === 'android' ? 0 : spacing.sm,
   },
   customDateRow: {
     flexDirection: 'row',

@@ -316,8 +316,8 @@ function createStyles(colors) {
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingTop: Platform.OS === 'ios' ? spacing.md : 0,
-    marginTop: Platform.OS === 'ios' ? spacing.sm : 0,
+    paddingTop: Platform.OS === 'android' ? 0 : spacing.md,
+    marginTop: Platform.OS === 'android' ? 0 : spacing.sm,
     marginBottom: spacing.lg,
   },
   title: {
