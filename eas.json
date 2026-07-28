@@ -12,7 +12,10 @@
       },
       "channel": "development",
       "env": {
-        "EXPO_PUBLIC_VERCEL_APP_URL": "https://receiptgenius-seven.vercel.app"
+        "EXPO_PUBLIC_VERCEL_APP_URL": "https://receiptgenius-seven.vercel.app",
+        "EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID": "1090639889222-idt22tu4nisnlbh9nb4mi2lohidns70t.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1090639889222-61nj8se7kosnlg023o1r63bokud9c5nu.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "1090639889222-j9e851i67p683r2hl2t192s60a5dmcbn.apps.googleusercontent.com"
       }
     },
     "preview": {
@@ -22,7 +25,10 @@
       },
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_VERCEL_APP_URL": "https://receiptgenius-seven.vercel.app"
+        "EXPO_PUBLIC_VERCEL_APP_URL": "https://receiptgenius-seven.vercel.app",
+        "EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID": "1090639889222-idt22tu4nisnlbh9nb4mi2lohidns70t.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1090639889222-61nj8se7kosnlg023o1r63bokud9c5nu.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "1090639889222-j9e851i67p683r2hl2t192s60a5dmcbn.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -31,7 +37,10 @@
       },
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_VERCEL_APP_URL": "https://receiptgenius-seven.vercel.app"
+        "EXPO_PUBLIC_VERCEL_APP_URL": "https://receiptgenius-seven.vercel.app",
+        "EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID": "1090639889222-idt22tu4nisnlbh9nb4mi2lohidns70t.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1090639889222-61nj8se7kosnlg023o1r63bokud9c5nu.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "1090639889222-j9e851i67p683r2hl2t192s60a5dmcbn.apps.googleusercontent.com"
       }
     }
   },
